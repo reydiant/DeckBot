@@ -39,10 +39,14 @@ import urllib.request
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 
+from panel import dashboard_links, health, reset_token, run_cli, run_detached, set_panel_settings, start_panel
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("DECKBOT_DATA", os.path.join(HERE, "data"))
 CONFIG_PATH = os.path.join(DATA, "config.json")
 KEYS_PATH = os.path.join(DATA, "keys.json")
+PANEL_PATH = os.path.join(DATA, "panel.json")
+SCRIPT = os.path.abspath(__file__)
 LOG_PATH = os.path.join(DATA, "deckbot.log")
 SERVICE_NAME = "deckbot.service"
 
@@ -964,6 +968,8 @@ def cmd_run(args):
     log.info(f"DeckBot started in {cfg['mode'].upper()} mode ({cfg['risk_profile']} risk) "
              f"on {', '.join(a['exchange'] for a in cfg['accounts'])}")
     traders = build_traders(cfg)
+    if not getattr(args, "once", False):
+        start_panel(PANEL_PATH, panel_snapshot, panel_action, default_port=8765)
     backoff = 0
     while not stop["now"]:
         ok = True
@@ -993,8 +999,11 @@ def cmd_run(args):
             time.sleep(1)
         # pick up pause/resume/mode changes made from the CLI
         new_cfg = load_config()
-        if new_cfg["mode"] != cfg["mode"] or new_cfg["accounts"] != cfg["accounts"]:
-            log.info("Config changed - reloading")
+        def risk_of(c):
+            return tuple(c[k] for k in ("risk_profile", "risk_per_trade", "daily_loss_limit", "max_drawdown"))
+        if (new_cfg["mode"] != cfg["mode"] or new_cfg["accounts"] != cfg["accounts"]
+                or risk_of(new_cfg) != risk_of(cfg)):
+            log.info(f"Config changed - reloading ({new_cfg['risk_profile']} risk)")
             cfg = new_cfg
             traders = build_traders(cfg)
         else:
@@ -1024,6 +1033,22 @@ def ask(prompt, default=None, choices=None):
             continue
         if val:
             return val
+
+
+def ask_number(prompt, default, lo, hi):
+    """Like ask(), but keeps asking until the answer is a number between lo and hi."""
+    while True:
+        val = ask(prompt, default).replace(",", "").replace("$", "").strip()
+        try:
+            n = float(val)
+        except ValueError:
+            print(f"  Please type a number, like {default}.")
+            continue
+        if not lo <= n <= hi:
+            fmt = lambda x: f"{x:,.0f}" if x >= 1000 else f"{x:g}"
+            print(f"  Please pick a number between {fmt(lo)} and {fmt(hi)}.")
+            continue
+        return n
 
 
 def ask_keys(exchange_id):
@@ -1078,10 +1103,11 @@ def cmd_setup(args):
     print("Starts in PAPER mode: real prices, pretend money. Nothing is traded until you run ./deckbot go-live.\n")
     choice = ask("Exchange: kraken, coinbase, or both", "kraken", ["kraken", "coinbase", "both"]).lower()
     exchanges = ["kraken", "coinbase"] if choice == "both" else [choice]
-    quote = ask("Trade against which currency (USD, USDC, EUR...)", "USD").upper()
+    quote = ask("Trade against which currency (USD, USDC, USDT, EUR, GBP, CAD...)", "USD",
+                ["usd", "usdc", "usdt", "eur", "gbp", "cad", "aud", "chf", "jpy"]).upper()
     accounts = []
     for x in exchanges:
-        budget = float(ask(f"How much {quote} may the bot use on {x}", "500"))
+        budget = ask_number(f"How much {quote} may the bot use on {x}", 500, 10, 10_000_000)
         accounts.append({"exchange": x, "budget": budget, "quote": quote})
     coins = ask("Coins to trade (comma separated)", ",".join(cfg["coins"]))
     cfg["coins"] = [c.strip().upper() for c in coins.split(",") if c.strip()]
@@ -1110,6 +1136,114 @@ def cmd_setup(args):
     print("  ./deckbot status    see what it's doing")
     if cfg["ntfy_topic"]:
         print(f"  Install the ntfy app on your phone and subscribe to: {cfg['ntfy_topic']}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Control panel (dashboard + Decky quick panel). The panel reads the same files the bot writes and
+# runs the same commands as the terminal, so both always agree.
+# ---------------------------------------------------------------------------
+
+def _open_live_positions(cfg):
+    return any(read_json(state_path(a["exchange"]), {}).get("positions") for a in cfg["accounts"])
+
+
+def panel_snapshot():
+    cfg = load_config()
+    keys = read_json(KEYS_PATH, {})
+    equity = pnl_total = pnl_day = 0.0
+    positions, raw, paused, halted, updated, ai_lines = [], [], False, False, "", []
+    budget = 0.0
+    quote = cfg["accounts"][0]["quote"] if cfg["accounts"] else "USD"
+    for a in cfg["accounts"]:
+        st = read_json(state_path(a["exchange"]), None)
+        budget += a["budget"]
+        if cfg["ai"]:
+            ai_lines.append(describe_brain(read_json(os.path.join(DATA, f"brain-{a['exchange']}.json"), {})))
+        if not st:
+            continue
+        eq = st.get("last_equity", st["cash"])
+        equity += eq
+        pnl_total += eq - a["budget"]
+        pnl_day += eq - st.get("day_start_equity", eq)
+        paused = paused or st.get("paused", False)
+        halted = halted or st.get("halted_today", False)
+        updated = max(updated, st.get("last_run", ""))
+        for sym, p in st["positions"].items():
+            positions.append({"name": f"{sym} on {a['exchange']}",
+                              "detail": f"{p['amount']:.6g} at {p['entry']:.6g}, stop {p['stop']:.6g}",
+                              "pnl_pct": None})
+        for t in st["trades"]:
+            raw.append({"time": t["time"][:16].replace("T", " "), "side": t["side"], "name": t["symbol"],
+                        "amount": f"{t['amount']:.6g}", "pnl": t.get("pnl"), "_sort": t["time"]})
+    raw.sort(key=lambda t: t["_sort"])
+    curve, run = [], 0.0
+    for t in raw:
+        if t["pnl"] is not None:
+            run += t["pnl"]
+            curve.append(round(run, 4))
+    trades = [{k: v for k, v in t.items() if k != "_sort"} for t in reversed(raw[-60:])]
+    rp = cfg["risk_profile"]
+    return {
+        "bot": "DeckBot", "currency": quote, "decimals": 2,
+        "mode": cfg["mode"], "paused": paused, "halted": halted,
+        "service": service_state(), "updated": updated or "not started yet",
+        "health": health(updated or None, cfg["check_every_seconds"]),
+        "equity": equity if cfg["accounts"] else None, "equity_label": "Equity",
+        "pnl_total": pnl_total, "pnl_day": pnl_day,
+        "open_count": len(positions), "max_open": cfg["max_positions"],
+        "positions": positions, "trades": trades, "curve": curve,
+        "ai_text": "\n".join(ai_lines) if cfg["ai"] else "AI is switched off in the settings.",
+        "risk_profile": rp, "presets": list(RISK_PRESETS),
+        "risk_text": (f"{rp.title()}: risks {cfg['risk_per_trade']:.0%} of the budget per trade, daily stop "
+                      f"-{cfg['daily_loss_limit']:.0%}, kill-switch at -{cfg['max_drawdown']:.0%}."),
+        "sizing": {"show": False},
+        "keys_ready": all(a["exchange"] in keys for a in cfg["accounts"]) and bool(cfg["accounts"]),
+    }
+
+
+def panel_action(name, value, confirm):
+    cfg = load_config()
+    if name == "risk":
+        return run_cli(SCRIPT, ["risk", str(value)])
+    if name in ("pause", "resume"):
+        return run_cli(SCRIPT, [name])
+    if name == "paper":
+        if cfg["mode"] == "live" and _open_live_positions(cfg):
+            return False, "The bot still holds live positions. Sell everything first."
+        return run_detached(SCRIPT, ["paper"], "paper")
+    if name == "go_live":
+        if confirm != "GO LIVE":
+            return False, "Type GO LIVE to confirm."
+        if not all(a["exchange"] in read_json(KEYS_PATH, {}) for a in cfg["accounts"]):
+            return False, "Add the exchange keys in the terminal first."
+        return run_detached(SCRIPT, ["go-live", "--yes"], "golive")
+    if name == "sell_all":
+        if confirm != "SELL":
+            return False, "Type SELL to confirm."
+        return run_detached(SCRIPT, ["sell-all", "--yes"], "sellall")
+    return False, "Unknown action."
+
+
+def cmd_dashboard(args):
+    if args.setting == "lan":
+        if args.value not in ("on", "off"):
+            print("Use: dashboard lan on  or  dashboard lan off")
+            return 1
+        set_panel_settings(PANEL_PATH, lan=args.value == "on")
+        print(f"Phone/LAN access {'on' if args.value == 'on' else 'off'}. Restart the bot to apply.")
+        if service_state() == "running":
+            restart_service()
+    elif args.setting == "reset-token":
+        reset_token(PANEL_PATH)
+        print("New token made. Old links stop working.")
+        if service_state() == "running":
+            restart_service()
+    local, lan = dashboard_links(PANEL_PATH, default_port=8765)
+    print(f"Dashboard on this Deck: {local}")
+    if lan:
+        print(f"From your phone (same Wi-Fi): {lan}")
+    print("Keep the link private: anyone with it can trade your account.")
     return 0
 
 
@@ -1175,7 +1309,7 @@ def cmd_go_live(args):
             print(f"  Budget lowered to the available {free:,.2f} {a['quote']}.")
             a["budget"] = math.floor(free * 100) / 100
     write_json(KEYS_PATH, keys, private=True)
-    if input('Type GO LIVE to confirm: ').strip() != "GO LIVE":
+    if not getattr(args, "yes", False) and input('Type GO LIVE to confirm: ').strip() != "GO LIVE":
         print("Cancelled - still in paper mode.")
         return 1
     cfg["mode"] = "live"
@@ -1201,10 +1335,30 @@ def cmd_paper(args):
     return 0
 
 
+def cmd_risk(args):
+    profile = args.profile.lower()
+    if profile not in RISK_PRESETS:
+        print(f"Pick one of: {', '.join(RISK_PRESETS)}")
+        return 1
+    cfg = load_config()
+    stored = read_json(CONFIG_PATH, {})
+    stored["risk_profile"] = profile
+    # a custom override in config.json would hide the preset, so drop them when a preset is chosen
+    for k in ("risk_per_trade", "daily_loss_limit", "max_drawdown"):
+        stored.pop(k, None)
+    write_json(CONFIG_PATH, stored)
+    cfg = load_config()
+    print(f"Risk profile: {profile} - {cfg['risk_per_trade']:.0%} risked per trade, daily stop "
+          f"{cfg['daily_loss_limit']:.0%}, kill-switch at -{cfg['max_drawdown']:.0%}.")
+    if cfg["mode"] == "live" or service_state() == "running":
+        print("The running bot picks this up within about a minute.")
+    return 0
+
+
 def cmd_sell_all(args):
     setup_logging()
     cfg = load_config()
-    if input(f"Sell everything the bot holds ({cfg['mode']} mode)? Type SELL: ").strip() != "SELL":
+    if not getattr(args, "yes", False) and input(f"Sell everything the bot holds ({cfg['mode']} mode)? Type SELL: ").strip() != "SELL":
         return 1
     stop_service()
     for t in build_traders(cfg):
@@ -1314,12 +1468,18 @@ def main(argv=None):
     p = argparse.ArgumentParser(prog="deckbot", description="Trend-following crypto bot for Kraken and Coinbase")
     sub = p.add_subparsers(dest="cmd")
     sub.add_parser("setup", help="interactive setup")
+    d = sub.add_parser("dashboard", help="show the dashboard link, or: dashboard lan on|off, dashboard reset-token")
+    d.add_argument("setting", nargs="?", default="link", choices=["link", "lan", "reset-token"])
+    d.add_argument("value", nargs="?")
     r = sub.add_parser("run", help="run in the foreground")
     r.add_argument("--once", action="store_true", help="run a single cycle and exit")
+    k = sub.add_parser("risk", help="conservative | moderate | aggressive")
+    k.add_argument("profile")
+    for name, h in (("go-live", "switch to real trading"), ("sell-all", "close every bot position now")):
+        sub.add_parser(name, help=h).add_argument("--yes", action="store_true", help="skip the typed confirmation")
     for name, h in [("status", "show equity, positions, recent trades"), ("learn", "retrain the AI now and show its test results"),
-                    ("go-live", "switch to real trading"),
                     ("paper", "switch back to paper trading"), ("pause", "stop opening new trades"),
-                    ("resume", "allow new trades again"), ("sell-all", "close every bot position now"),
+                    ("resume", "allow new trades again"),
                     ("start", "run in the background"), ("stop", "stop the background bot"),
                     ("restart", "restart the background bot"), ("logs", "show recent log lines")]:
         sub.add_parser(name, help=h)
@@ -1327,7 +1487,7 @@ def main(argv=None):
     handlers = {
         "setup": cmd_setup, "run": cmd_run, "status": cmd_status, "learn": cmd_learn, "go-live": cmd_go_live,
         "paper": cmd_paper, "pause": lambda a: set_paused(True), "resume": lambda a: set_paused(False),
-        "sell-all": cmd_sell_all, "start": cmd_start, "stop": cmd_stop,
+        "sell-all": cmd_sell_all, "risk": cmd_risk, "dashboard": cmd_dashboard, "start": cmd_start, "stop": cmd_stop,
         "restart": lambda a: (restart_service(), 0)[1], "logs": cmd_logs,
     }
     if args.cmd not in handlers:

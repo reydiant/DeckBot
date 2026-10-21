@@ -64,7 +64,17 @@ Run these from `~/deckbot`:
 | `./deckbot sell-all` | close everything the bot holds and stop it |
 | `./deckbot go-live` / `paper` | switch modes |
 | `./deckbot stop` / `start` | stop or start the background bot |
+| `./deckbot risk conservative` | change how aggressive it trades (takes effect within a minute) |
+| `./deckbot dashboard` | show the link to the web dashboard |
 | `./deckbot setup` | change exchanges, budget, coins or risk |
+
+**Web dashboard and Quick Access panel:** the bot runs a control panel on the Deck. Run
+`./deckbot dashboard` to get the link. The dashboard shows equity, profit over time, positions,
+trades and the AI, with buttons for risk level, pause, paper/live mode and emergency sell. Going
+live asks you to type `GO LIVE`; emergency sell asks you to type `SELL`. `./deckbot dashboard lan on`
+lets your phone on the same Wi-Fi open it too. The separate **Bot Panel** Decky plugin adds the
+main controls to the Quick Access menu. The panel only listens on this Deck unless LAN is on, and
+anyone with the link can trade your account, so keep it private.
 
 **Phone alerts:** install the free **ntfy** app and subscribe to the topic you chose in setup.
 You'll get a notification for every buy, every sell, and any problem.
