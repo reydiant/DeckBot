@@ -25,10 +25,20 @@ if [ -f data/config.json ]; then
   echo "Existing settings found - keeping them."
   systemctl --user restart deckbot.service 2>/dev/null && echo "Background bot restarted." || true
 else
-  ./deckbot setup
-  read -r -p "Start DeckBot in the background now? [Y/n] " yn
-  if [[ ! "${yn:-Y}" =~ ^[Nn] ]]; then
-    ./deckbot start
+  restored=no
+  if .venv/bin/python -c "import sys; sys.path.insert(0, '.'); import panel; sys.exit(0 if panel.find_backups('deckbot') else 1)" 2>/dev/null; then
+    read -r -p "A DeckBot backup was found. Restore it instead of setting up from scratch? [Y/n] " rb
+    if [[ ! "${rb:-Y}" =~ ^[Nn] ]] && ./deckbot restore; then
+      restored=yes
+      ./deckbot start
+    fi
+  fi
+  if [ "$restored" = no ]; then
+    ./deckbot setup
+    read -r -p "Start DeckBot in the background now? [Y/n] " yn
+    if [[ ! "${yn:-Y}" =~ ^[Nn] ]]; then
+      ./deckbot start
+    fi
   fi
 fi
 echo

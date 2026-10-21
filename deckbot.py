@@ -39,7 +39,11 @@ import urllib.request
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 
-from panel import dashboard_links, health, reset_token, run_cli, run_detached, set_panel_settings, start_panel
+from panel import (cli_backup, cli_restore, cli_restore_pending, install_update, maintenance_action,
+                   maintenance_snapshot, add_history_point, local_time, mask, merge_histories,
+                   append_journal, build_report, dashboard_links, health, ntfy, power_status, read_journal,
+                   reset_token, run_cli, run_detached, set_panel_settings, start_panel, tail_log, trades_csv,
+                   valid_topic, watchdog_tick, watchdog_units)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("DECKBOT_DATA", os.path.join(HERE, "data"))
@@ -47,8 +51,11 @@ CONFIG_PATH = os.path.join(DATA, "config.json")
 KEYS_PATH = os.path.join(DATA, "keys.json")
 PANEL_PATH = os.path.join(DATA, "panel.json")
 SCRIPT = os.path.abspath(__file__)
+VERSION = "1.7.0"
+UPDATE_FILES = {"README.md", "deckbot", "deckbot.py", "install.sh", "panel.py", "dashboard.html"}
 LOG_PATH = os.path.join(DATA, "deckbot.log")
 SERVICE_NAME = "deckbot.service"
+WATCHDOG_TIMER = "deckbot-watchdog.timer"
 
 RISK_PRESETS = {
     "conservative": {"risk_per_trade": 0.01, "daily_loss_limit": 0.03, "max_drawdown": 0.15},
@@ -546,6 +553,31 @@ class Trader:
         self.markets_loaded = False
         self.errors_in_row = 0
         self.brain = Brain(os.path.join(DATA, f"brain-{self.id}.json"))
+        changed = self.state.get("started") is None
+        self.state.setdefault("started", datetime.fromtimestamp(self.clock(), timezone.utc).isoformat(timespec="seconds"))
+        if self.apply_budget_change() or changed:
+            self.save()
+
+    def apply_budget_change(self):
+        """A new budget from the budget command adds or removes (pretend or allotted) cash without resetting
+        anything else. Money already in a position can't be taken back until it's sold."""
+        st = self.state
+        new = float(self.acct["budget"])
+        old = st.get("budget")
+        if old is None:
+            st["budget"] = new
+            return True
+        delta = new - old
+        if abs(delta) < 1e-9:
+            return False
+        if st["cash"] + delta < 0:
+            delta = -st["cash"]
+        for k in ("cash", "start_equity", "day_start_equity", "peak_equity", "last_equity"):
+            if k in st:
+                st[k] = st[k] + delta
+        st["budget"] = old + delta
+        log.info(f"[{self.id}] budget {old:,.2f} -> {st['budget']:,.2f} {self.quote}")
+        return True
 
     def fresh_state(self):
         budget = float(self.acct["budget"])
@@ -563,6 +595,8 @@ class Trader:
             "paused": False,
             "realized_pnl": 0.0,
             "trades": [],
+            "budget": budget,
+            "started": datetime.fromtimestamp(self.clock(), timezone.utc).isoformat(timespec="seconds"),
         }
 
     def save(self):
@@ -605,6 +639,7 @@ class Trader:
         if note:
             t["note"] = note
         self.state["trades"] = (self.state["trades"] + [t])[-200:]
+        append_journal(DATA, dict(t, exchange=self.id, mode=self.cfg["mode"], quote=self.quote))
         tag = "PAPER " if not self.live else ""
         msg = f"{tag}{kind.upper()} {amount:.6g} {symbol} @ {price:.6g}"
         if pnl is not None:
@@ -838,6 +873,16 @@ class Trader:
                 self.try_enter(symbol, prices[symbol], sig, eq, ai)
 
         eq = self.equity(prices)
+        st = self.state
+        bench = st.setdefault("bench_start", {})
+        for s_, p in prices.items():
+            if p:
+                bench.setdefault(s_, p)           # price when the bot first saw each coin (for "vs holding")
+        st["last_prices"] = {s_: p for s_, p in prices.items() if p}
+        btc = next((p for s_, p in st["last_prices"].items() if s_.startswith("BTC/")), None)
+        st["equity_hist"] = add_history_point(st.get("equity_hist", []), int(self.clock()), round(eq, 2), btc)
+        peak = max(st.get("peak_equity", eq), eq)
+        st["max_dd"] = max(st.get("max_dd", 0.0), (1 - eq / peak) if peak else 0.0)
         self.state["last_equity"] = eq
         self.state["last_run"] = datetime.fromtimestamp(self.clock(), timezone.utc).isoformat(timespec="seconds")
         self.save()
@@ -968,8 +1013,9 @@ def cmd_run(args):
     log.info(f"DeckBot started in {cfg['mode'].upper()} mode ({cfg['risk_profile']} risk) "
              f"on {', '.join(a['exchange'] for a in cfg['accounts'])}")
     traders = build_traders(cfg)
+    keys_seen = os.path.getmtime(KEYS_PATH) if os.path.exists(KEYS_PATH) else 0
     if not getattr(args, "once", False):
-        start_panel(PANEL_PATH, panel_snapshot, panel_action, default_port=8765)
+        start_panel(PANEL_PATH, panel_snapshot, panel_action, default_port=8765, export_fn=panel_export)
     backoff = 0
     while not stop["now"]:
         ok = True
@@ -1001,13 +1047,16 @@ def cmd_run(args):
         new_cfg = load_config()
         def risk_of(c):
             return tuple(c[k] for k in ("risk_profile", "risk_per_trade", "daily_loss_limit", "max_drawdown"))
+        keys_now = os.path.getmtime(KEYS_PATH) if os.path.exists(KEYS_PATH) else 0
         if (new_cfg["mode"] != cfg["mode"] or new_cfg["accounts"] != cfg["accounts"]
-                or risk_of(new_cfg) != risk_of(cfg)):
+                or risk_of(new_cfg) != risk_of(cfg) or new_cfg["coins"] != cfg["coins"] or keys_now != keys_seen):
+            keys_seen = keys_now
             log.info(f"Config changed - reloading ({new_cfg['risk_profile']} risk)")
             cfg = new_cfg
             traders = build_traders(cfg)
         else:
             for t in traders:
+                t.cfg["ntfy_topic"] = new_cfg.get("ntfy_topic", "")
                 fresh = read_json(t.path, None)
                 if fresh and fresh.get("paused") != t.state["paused"]:
                     # pause/resume from the CLI; resume also resets the drawdown baseline
@@ -1092,6 +1141,112 @@ def check_keys(exchange_id, keys, quote):
         return None
 
 
+def keys_from_input(exchange_id, value):
+    """Turns what the dashboard / Decky panel sent into the keys dict ccxt needs. Raises ValueError."""
+    v = value if isinstance(value, dict) else {}
+    if exchange_id == "coinbase" and (v.get("json") or v.get("path")):
+        if v.get("path"):
+            home = os.path.realpath(os.path.expanduser("~"))
+            path = os.path.realpath(os.path.expanduser(str(v["path"])))
+            if not path.startswith(home + os.sep):
+                raise ValueError("The key file has to be in your home folder.")
+            try:
+                with open(path, encoding="utf-8") as f:
+                    text = f.read(20000)
+            except OSError:
+                raise ValueError("Couldn't open that key file.")
+        else:
+            text = str(v["json"])
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            raise ValueError("That isn't a Coinbase key file (cdp_api_key.json).")
+        name, secret = data.get("name") or data.get("id"), data.get("privateKey")
+        if not (name and secret):
+            raise ValueError("That file doesn't contain a Coinbase key name and private key.")
+        return {"apiKey": str(name).strip(), "secret": str(secret).strip()}
+    key, secret = str(v.get("apiKey", "")).strip(), str(v.get("secret", "")).strip()
+    if not key or not secret:
+        raise ValueError("Enter both the API key and the private key.")
+    if len(key) > 4096 or len(secret) > 8192:
+        raise ValueError("Those keys are too long.")
+    return {"apiKey": key, "secret": secret}
+
+
+def save_exchange_keys(exchange_id, new_keys):
+    """Checks the keys with the exchange, then saves them. Returns (ok, message). Never logs the keys."""
+    import contextlib
+    import io
+    cfg = load_config()
+    acct = next((a for a in cfg["accounts"] if a["exchange"] == exchange_id), None)
+    if not acct:
+        return False, f"{exchange_id} isn't one of your exchanges. Add it with setup first."
+    st = read_json(state_path(exchange_id), {}) or {}
+    if cfg["mode"] == "live" and st.get("positions"):
+        return False, (f"The bot holds live positions on {exchange_id}. Changing keys now could strand them - "
+                       f"wait for them to close or sell everything first.")
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        free = check_keys(exchange_id, new_keys, acct["quote"])
+    if free is None:
+        reason = out.getvalue().strip().splitlines()[-1].strip(" ✗") if out.getvalue().strip() else "rejected"
+        return False, f"Keys not saved - {reason}"
+    keys = read_json(KEYS_PATH, {})
+    keys[exchange_id] = new_keys
+    write_json(KEYS_PATH, keys, private=True)
+    log.info(f"[{exchange_id}] API keys updated")
+    return True, f"✓ {exchange_id} keys saved. Available {acct['quote']}: {free:,.2f}"
+
+
+def remove_exchange_keys(exchange_id):
+    cfg = load_config()
+    if cfg["mode"] == "live":
+        return False, "Switch to paper mode before removing keys."
+    keys = read_json(KEYS_PATH, {})
+    if exchange_id not in keys:
+        return False, f"No {exchange_id} keys saved."
+    keys.pop(exchange_id)
+    write_json(KEYS_PATH, keys, private=True)
+    log.info(f"[{exchange_id}] API keys removed")
+    return True, f"{exchange_id} keys removed."
+
+
+def cmd_keys(args):
+    cfg = load_config()
+    names = [a["exchange"] for a in cfg["accounts"]]
+    if not names:
+        print("Run ./deckbot setup first.")
+        return 1
+    ex_name = (args.exchange or (names[0] if len(names) == 1 else "")).lower()
+    if ex_name not in names:
+        print(f"Which exchange? ./deckbot keys {' or ./deckbot keys '.join(names)}")
+        return 1
+    ok, msg = save_exchange_keys(ex_name, ask_keys(ex_name))
+    print(msg)
+    return 0 if ok else 1
+
+
+def cmd_coins(args):
+    cfg = load_config()
+    if not args.coins:
+        print(f"Coins: {', '.join(cfg['coins'])}")
+        return 0
+    coins = [c.strip().upper() for c in args.coins.replace(" ", ",").split(",") if c.strip()]
+    coins = list(dict.fromkeys(coins))
+    bad = [c for c in coins if not c.isalnum() or len(c) > 12]
+    if bad or not coins:
+        print(f"Use coin symbols separated by commas, like BTC,ETH,SOL{(' (not ' + ', '.join(bad) + ')') if bad else ''}.")
+        return 1
+    if len(coins) > 15:
+        print("Pick at most 15 coins.")
+        return 1
+    cfg["coins"] = coins
+    save_config(cfg)
+    print(f"Coins: {', '.join(coins)}. Coins the bot already holds are still managed until sold. "
+          f"Applied at the next check (within 5 minutes).")
+    return 0
+
+
 def cmd_setup(args):
     cfg = load_config()
     if cfg["mode"] == "live" and any(read_json(state_path(a["exchange"]), {}).get("positions")
@@ -1148,11 +1303,58 @@ def _open_live_positions(cfg):
     return any(read_json(state_path(a["exchange"]), {}).get("positions") for a in cfg["accounts"])
 
 
+def _all_trades(cfg):
+    """Every trade from the journal, plus older ones still in the state files."""
+    fallback = []
+    for a in cfg["accounts"]:
+        st = read_json(state_path(a["exchange"]), None) or {}
+        for t in st.get("trades", []):
+            fallback.append(dict(t, exchange=a["exchange"], mode=st.get("mode", cfg["mode"]), quote=a["quote"]))
+    fallback.sort(key=lambda t: t.get("time", ""))
+    return read_journal(DATA, fallback)
+
+
+def deck_report(cfg):
+    capital = equity = 0.0
+    started, worst, bench = None, None, None
+    quote = cfg["accounts"][0]["quote"] if cfg["accounts"] else "USD"
+    for a in cfg["accounts"]:
+        st = read_json(state_path(a["exchange"]), None)
+        if not st:
+            continue
+        capital += float(st.get("budget", a["budget"]))
+        equity += st.get("last_equity", st["cash"])
+        s = st.get("started") or (st["trades"][0]["time"] if st.get("trades") else None)
+        if s and (started is None or s < started):
+            started = s
+        if st.get("max_dd") is not None:
+            worst = max(worst or 0.0, st["max_dd"])
+        bs, lp = st.get("bench_start") or {}, st.get("last_prices") or {}
+        if bench is None and bs:
+            sym = next((k for k in bs if k.startswith("BTC/")), None) or next(iter(bs))
+            if sym in lp and bs[sym]:
+                bench = {"name": sym.split("/")[0], "return_pct": lp[sym] / bs[sym] - 1}
+    trades = [t for t in _all_trades(cfg) if t.get("mode", cfg["mode"]) == cfg["mode"]]
+    return build_report(mode=cfg["mode"], trades=trades, started=started, currency=quote, decimals=2,
+                        min_days=30, min_trades=6, capital=capital or None,
+                        equity=equity if capital else None, worst_drop_pct=worst, bench=bench)
+
+
+def panel_export():
+    cfg = load_config()
+    cols = [("Time (UTC)", "time"), ("Time (local)", lambda r: local_time(r.get("time"), "%Y-%m-%d %H:%M")),
+            ("Exchange", "exchange"), ("Mode", "mode"), ("Side", "side"),
+            ("Coin", "symbol"), ("Amount", "amount"), ("Price", "price"),
+            ("Value", lambda r: round(r["amount"] * r["price"], 2) if r.get("amount") and r.get("price") else ""),
+            ("Profit/loss", "pnl"), ("Currency", "quote"), ("Note", "note")]
+    return trades_csv(_all_trades(cfg), cols)
+
+
 def panel_snapshot():
     cfg = load_config()
     keys = read_json(KEYS_PATH, {})
     equity = pnl_total = pnl_day = 0.0
-    positions, raw, paused, halted, updated, ai_lines = [], [], False, False, "", []
+    positions, raw, paused, halted, updated, ai_lines, hists = [], [], False, False, "", [], []
     budget = 0.0
     quote = cfg["accounts"][0]["quote"] if cfg["accounts"] else "USD"
     for a in cfg["accounts"]:
@@ -1169,12 +1371,16 @@ def panel_snapshot():
         paused = paused or st.get("paused", False)
         halted = halted or st.get("halted_today", False)
         updated = max(updated, st.get("last_run", ""))
+        lp = st.get("last_prices") or {}
         for sym, p in st["positions"].items():
+            now_px = lp.get(sym)
             positions.append({"name": f"{sym} on {a['exchange']}",
-                              "detail": f"{p['amount']:.6g} at {p['entry']:.6g}, stop {p['stop']:.6g}",
-                              "pnl_pct": None})
+                              "detail": f"{p['amount']:.6g} at {p['entry']:.6g}"
+                                        + (f", now {now_px:.6g}" if now_px else "") + f", stop {p['stop']:.6g}",
+                              "pnl_pct": (now_px / p["entry"] - 1) if now_px and p.get("entry") else None})
+        hists.append(st.get("equity_hist") or [])
         for t in st["trades"]:
-            raw.append({"time": t["time"][:16].replace("T", " "), "side": t["side"], "name": t["symbol"],
+            raw.append({"time": local_time(t["time"]), "side": t["side"], "name": t["symbol"],
                         "amount": f"{t['amount']:.6g}", "pnl": t.get("pnl"), "_sort": t["time"]})
     raw.sort(key=lambda t: t["_sort"])
     curve, run = [], 0.0
@@ -1184,11 +1390,31 @@ def panel_snapshot():
             curve.append(round(run, 4))
     trades = [{k: v for k, v in t.items() if k != "_sort"} for t in reversed(raw[-60:])]
     rp = cfg["risk_profile"]
+    merged = merge_histories(hists)
+    eq_curve = None
+    if len(merged) >= 2:
+        b0 = next((p[2] for p in merged if p[2]), None)
+        e0 = merged[0][1]
+        eq_curve = {"label": "Equity", "bench_label": "Holding BTC" if b0 else None, "currency": quote,
+                    "points": [[local_time(datetime.fromtimestamp(p[0], timezone.utc).isoformat(), "%m-%d %H:%M"),
+                                p[1], (e0 * p[2] / b0) if (b0 and p[2]) else None] for p in merged]}
     return {
         "bot": "DeckBot", "currency": quote, "decimals": 2,
         "mode": cfg["mode"], "paused": paused, "halted": halted,
-        "service": service_state(), "updated": updated or "not started yet",
+        "service": service_state(), "updated": local_time(updated, "%Y-%m-%d %H:%M") if updated else "not started yet",
         "health": health(updated or None, cfg["check_every_seconds"]),
+        "equity_curve": eq_curve,
+        "coins": cfg["coins"],
+        "key_help": {
+            "kraken": "On kraken.com: Settings > API > Create API key. Tick only Query Funds, Query Open/Closed Orders, "
+                      "Create & Modify Orders and Cancel/Close Orders. Never tick withdrawals. Copy the API key and private key.",
+            "coinbase": "On coinbase.com: Settings > API > create an API key with Trade permission only (no Transfer). "
+                        "It downloads cdp_api_key.json - pick that file here.",
+        },
+        "can_generate_wallet": False,
+        "keys": [{"name": a["exchange"], "set": a["exchange"] in keys,
+                  "hint": mask((keys.get(a["exchange"]) or {}).get("apiKey"))} for a in cfg["accounts"]],
+        "log": tail_log(LOG_PATH, 100),
         "equity": equity if cfg["accounts"] else None, "equity_label": "Equity",
         "pnl_total": pnl_total, "pnl_day": pnl_day,
         "open_count": len(positions), "max_open": cfg["max_positions"],
@@ -1199,6 +1425,14 @@ def panel_snapshot():
                       f"-{cfg['daily_loss_limit']:.0%}, kill-switch at -{cfg['max_drawdown']:.0%}."),
         "sizing": {"show": False},
         "keys_ready": all(a["exchange"] in keys for a in cfg["accounts"]) and bool(cfg["accounts"]),
+        **maintenance_snapshot("deckbot", VERSION, UPDATE_FILES),
+        "report": deck_report(cfg),
+        "power": power_status(),
+        "battery_sensitive": False,
+        "alerts": {"topic": cfg.get("ntfy_topic", ""), "set": bool(cfg.get("ntfy_topic"))},
+        "budgets": [{"exchange": a["exchange"], "budget": a["budget"], "quote": a["quote"],
+                     "free": (read_json(state_path(a["exchange"]), None) or {}).get("cash")}
+                    for a in cfg["accounts"]],
     }
 
 
@@ -1222,6 +1456,30 @@ def panel_action(name, value, confirm):
         if confirm != "SELL":
             return False, "Type SELL to confirm."
         return run_detached(SCRIPT, ["sell-all", "--yes"], "sellall")
+    if name == "alerts":
+        return run_cli(SCRIPT, ["alerts", str(value or "none")])
+    if name == "test_alert":
+        return run_cli(SCRIPT, ["alerts", "test"])
+    if name == "budget":
+        v = value if isinstance(value, dict) else {}
+        return run_cli(SCRIPT, ["budget", str(v.get("exchange", "")), str(v.get("amount", ""))])
+    if name == "coins":
+        return run_cli(SCRIPT, ["coins", str(value or "")])
+    if name == "keys":
+        # handled in this process so the keys never appear on a command line
+        v = value if isinstance(value, dict) else {}
+        ex_name = str(v.get("exchange", "")).lower()
+        try:
+            new_keys = keys_from_input(ex_name, v)
+        except ValueError as e:
+            return False, str(e)
+        return save_exchange_keys(ex_name, new_keys)
+    if name == "remove_keys":
+        return remove_exchange_keys(str((value or {}).get("exchange", "") if isinstance(value, dict) else value).lower())
+    res = maintenance_action(name, value, confirm, bot="deckbot", data_dir=DATA, script=SCRIPT,
+                             version=VERSION, allowed=UPDATE_FILES)
+    if res is not None:
+        return res
     return False, "Unknown action."
 
 
@@ -1249,6 +1507,10 @@ def cmd_dashboard(args):
 
 def cmd_status(args):
     cfg = load_config()
+    try:
+        rep = deck_report(cfg) if cfg["accounts"] else None
+    except Exception:
+        rep = None
     print(f"Mode: {cfg['mode'].upper()}   Risk: {cfg['risk_profile']} "
           f"({cfg['risk_per_trade']:.0%}/trade, daily stop {cfg['daily_loss_limit']:.0%}, "
           f"kill-switch at -{cfg['max_drawdown']:.0%})")
@@ -1274,6 +1536,11 @@ def cmd_status(args):
         for t in st["trades"][-5:]:
             pnl = f" P&L {t['pnl']:+.2f}" if "pnl" in t else ""
             print(f"  {t['time']} {t['side']} {t['amount']:.6g} {t['symbol']} @ {t['price']:.6g}{pnl}")
+    if rep:
+        print("\nReady to go live?")
+        for ln in rep["lines"]:
+            print("  " + ln)
+    print(f"\nPhone alerts: {cfg.get('ntfy_topic') or 'off (./deckbot alerts <topic> to turn on)'}")
     return 0
 
 
@@ -1351,7 +1618,146 @@ def cmd_risk(args):
     print(f"Risk profile: {profile} - {cfg['risk_per_trade']:.0%} risked per trade, daily stop "
           f"{cfg['daily_loss_limit']:.0%}, kill-switch at -{cfg['max_drawdown']:.0%}.")
     if cfg["mode"] == "live" or service_state() == "running":
-        print("The running bot picks this up within about a minute.")
+        print("The running bot uses it from its next market check (within 5 minutes).")
+    return 0
+
+
+def _stop_bot():
+    systemctl("stop", SERVICE_NAME)
+
+
+def _start_bot():
+    systemctl("start", SERVICE_NAME)
+
+
+def cmd_backup(args):
+    return cli_backup("deckbot", DATA)
+
+
+def cmd_restore(args):
+    return cli_restore("deckbot", DATA, _stop_bot, _start_bot, lambda: service_state() == "running")
+
+
+def cmd_restore_pending(args):
+    return cli_restore_pending(DATA, _stop_bot, _start_bot)
+
+
+def cmd_apply_update(args):
+    try:
+        v = install_update(args.zip, "deckbot", HERE, UPDATE_FILES)
+    except ValueError as e:
+        print(f"Update not installed: {e}")
+        return 1
+    print(f"Installed version {v} (previous files kept in .previous/).")
+    install_service()
+    systemctl("enable", "--now", WATCHDOG_TIMER)
+    if service_state() == "running" or service_enabled():
+        restart_service()
+    return 0
+
+
+def cmd_alerts(args):
+    cfg = load_config()
+    v = (args.topic or "").strip()
+    if not v:
+        print(f"Phone alerts topic: {cfg.get('ntfy_topic') or 'none (alerts off)'}")
+        return 0
+    if v.lower() == "test":
+        if not cfg.get("ntfy_topic"):
+            print("No alerts topic set yet. Pick one: ./deckbot alerts my-long-private-name")
+            return 1
+        ok = ntfy(cfg["ntfy_topic"], "DeckBot: test alert", "Alerts are working. You'll get buys, sells, problems and a weekly summary here.")
+        print(f"Test alert sent to '{cfg['ntfy_topic']}'." if ok else "Couldn't reach ntfy.sh - check the Deck's internet connection.")
+        return 0 if ok else 1
+    topic = "" if v.lower() == "none" else v
+    if topic and not valid_topic(topic):
+        print("Use only letters, numbers, - and _ (no spaces), up to 64 characters.")
+        return 1
+    cfg["ntfy_topic"] = topic
+    save_config(cfg)
+    if not topic:
+        print("Phone alerts off.")
+        return 0
+    print(f"Phone alerts go to '{topic}'. Subscribe to it in the ntfy app.")
+    if len(topic) < 12:
+        print("Tip: short names are easy to guess, and anyone who subscribes sees your alerts. Longer is safer.")
+    return 0
+
+
+def cmd_budget(args):
+    cfg = load_config()
+    accts = cfg["accounts"]
+    if not accts:
+        print("Run ./deckbot setup first.")
+        return 1
+    if args.amount is None:
+        if len(accts) != 1:
+            print(f"Say which exchange, e.g. ./deckbot budget {accts[0]['exchange']} 750")
+            return 1
+        ex_name, amount_s = accts[0]["exchange"], args.exchange
+    else:
+        ex_name, amount_s = (args.exchange or "").lower(), args.amount
+    acct = next((a for a in accts if a["exchange"] == ex_name), None)
+    if not acct:
+        print(f"No {ex_name or '?'} account. You have: {', '.join(a['exchange'] for a in accts)}")
+        return 1
+    try:
+        amount = float(str(amount_s).replace(",", "").replace("$", ""))
+    except ValueError:
+        print("Usage: ./deckbot budget kraken 750")
+        return 1
+    if not 10 <= amount <= 10_000_000:
+        print("Pick a budget between 10 and 10,000,000.")
+        return 1
+    st = read_json(state_path(ex_name), None) or {}
+    old = float(st.get("budget", acct["budget"]))
+    delta = amount - old
+    if delta < 0 and st and -delta > st.get("cash", old) + 1e-9:
+        print(f"Can only lower {ex_name} by {st['cash']:,.2f} {acct['quote']} right now - the rest is in open "
+              f"positions. Lower it after they close, or pick at least {old - st['cash']:,.2f}.")
+        return 1
+    if delta > 0 and cfg["mode"] == "live":
+        keys = read_json(KEYS_PATH, {})
+        free = check_keys(ex_name, keys[ex_name], acct["quote"]) if ex_name in keys else None
+        need = st.get("cash", 0.0) + delta
+        if free is None or free < need - 1e-6:
+            print(f"Not enough {acct['quote']} free on {ex_name} for that "
+                  f"(needs {need:,.2f}{'' if free is None else f', has {free:,.2f}'}).")
+            return 1
+    acct["budget"] = round(amount, 2)
+    save_config(cfg)
+    print(f"{ex_name} budget {old:,.2f} -> {amount:,.2f} {acct['quote']}. "
+          f"The running bot applies it at its next check (within 5 minutes).")
+    return 0
+
+
+def cmd_report(args):
+    cfg = load_config()
+    if not cfg["accounts"]:
+        print("Run ./deckbot setup first.")
+        return 1
+    print("\n".join(deck_report(cfg)["lines"]))
+    return 0
+
+
+def service_enabled():
+    r = systemctl("is-enabled", SERVICE_NAME)
+    return bool(r) and r.stdout.strip() == "enabled"
+
+
+def cmd_watchdog(args):
+    """Run by the watchdog timer every 10 minutes: phone alerts if the bot stalls, plus a weekly summary."""
+    cfg = load_config()
+    if not cfg["accounts"]:
+        return 0
+    try:
+        snap = panel_snapshot()
+    except Exception:
+        snap = None
+    sent = watchdog_tick(DATA, "DeckBot", snap, lambda t, m: ntfy(cfg.get("ntfy_topic"), f"DeckBot: {t}", m),
+                         service_enabled(), battery_sensitive=False)
+    for t, m in sent:
+        print(f"{t}: {m}")
     return 0
 
 
@@ -1360,10 +1766,10 @@ def cmd_sell_all(args):
     cfg = load_config()
     if not getattr(args, "yes", False) and input(f"Sell everything the bot holds ({cfg['mode']} mode)? Type SELL: ").strip() != "SELL":
         return 1
-    stop_service()
+    systemctl("disable", "--now", SERVICE_NAME)  # stays stopped after a reboot too
     for t in build_traders(cfg):
         t.sell_all()
-    print("Done. The bot is stopped; ./deckbot start to run it again.")
+    print("Done. The bot is stopped (also after a reboot); ./deckbot start to run it again.")
     return 0
 
 
@@ -1402,6 +1808,11 @@ RestartSec=30
 [Install]
 WantedBy=default.target
 """)
+    svc, timer = watchdog_units("DeckBot", py, os.path.join(HERE, "deckbot.py"), HERE)
+    with open(os.path.join(unit_dir, "deckbot-watchdog.service"), "w") as f:
+        f.write(svc)
+    with open(os.path.join(unit_dir, WATCHDOG_TIMER), "w") as f:
+        f.write(timer)
     systemctl("daemon-reload")
 
 
@@ -1419,6 +1830,7 @@ def cmd_start(args):
         print("Run ./deckbot setup first.")
         return 1
     install_service()
+    systemctl("enable", "--now", WATCHDOG_TIMER)
     r = systemctl("enable", "--now", SERVICE_NAME)
     if r is None or r.returncode != 0:
         print("Couldn't start the background service:", (r.stderr if r else "no systemd"))
@@ -1427,6 +1839,13 @@ def cmd_start(args):
     print("DeckBot is running in the background and will start automatically when the Deck boots.")
     print("It keeps working in Game Mode. It can't trade while the Deck is asleep -")
     print("exchange-side stop orders protect open positions in the meantime (live mode).")
+    return 0
+
+
+def cmd_restart(args):
+    install_service()           # also picks up new features such as the watchdog timer after an update
+    systemctl("enable", "--now", WATCHDOG_TIMER)
+    restart_service()
     return 0
 
 
@@ -1475,6 +1894,22 @@ def main(argv=None):
     r.add_argument("--once", action="store_true", help="run a single cycle and exit")
     k = sub.add_parser("risk", help="conservative | moderate | aggressive")
     k.add_argument("profile")
+    sub.add_parser("backup", help="save an encrypted backup (SD card, USB stick or Documents)")
+    sub.add_parser("restore", help="restore from a backup")
+    sub.add_parser("restore-pending", help=argparse.SUPPRESS)
+    au = sub.add_parser("apply-update", help=argparse.SUPPRESS)
+    au.add_argument("zip")
+    al = sub.add_parser("alerts", help="phone alerts: alerts <topic> | alerts none | alerts test")
+    al.add_argument("topic", nargs="?")
+    b = sub.add_parser("budget", help="change a budget without resetting, e.g. budget kraken 750")
+    b.add_argument("exchange")
+    b.add_argument("amount", nargs="?")
+    sub.add_parser("report", help="paper/live results and whether it's ready to go live")
+    ky = sub.add_parser("keys", help="enter or replace exchange API keys, e.g. keys kraken")
+    ky.add_argument("exchange", nargs="?")
+    co = sub.add_parser("coins", help="show or change the coins it trades, e.g. coins BTC,ETH,SOL")
+    co.add_argument("coins", nargs="?")
+    sub.add_parser("watchdog", help=argparse.SUPPRESS)
     for name, h in (("go-live", "switch to real trading"), ("sell-all", "close every bot position now")):
         sub.add_parser(name, help=h).add_argument("--yes", action="store_true", help="skip the typed confirmation")
     for name, h in [("status", "show equity, positions, recent trades"), ("learn", "retrain the AI now and show its test results"),
@@ -1487,8 +1922,11 @@ def main(argv=None):
     handlers = {
         "setup": cmd_setup, "run": cmd_run, "status": cmd_status, "learn": cmd_learn, "go-live": cmd_go_live,
         "paper": cmd_paper, "pause": lambda a: set_paused(True), "resume": lambda a: set_paused(False),
-        "sell-all": cmd_sell_all, "risk": cmd_risk, "dashboard": cmd_dashboard, "start": cmd_start, "stop": cmd_stop,
-        "restart": lambda a: (restart_service(), 0)[1], "logs": cmd_logs,
+        "sell-all": cmd_sell_all, "risk": cmd_risk, "dashboard": cmd_dashboard, "start": cmd_start,
+        "alerts": cmd_alerts, "backup": cmd_backup, "restore": cmd_restore,
+        "restore-pending": cmd_restore_pending, "apply-update": cmd_apply_update, "budget": cmd_budget, "report": cmd_report, "watchdog": cmd_watchdog,
+        "keys": cmd_keys, "coins": cmd_coins, "stop": cmd_stop,
+        "restart": cmd_restart, "logs": cmd_logs,
     }
     if args.cmd not in handlers:
         p.print_help()

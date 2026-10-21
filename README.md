@@ -64,20 +64,49 @@ Run these from `~/deckbot`:
 | `./deckbot sell-all` | close everything the bot holds and stop it |
 | `./deckbot go-live` / `paper` | switch modes |
 | `./deckbot stop` / `start` | stop or start the background bot |
-| `./deckbot risk conservative` | change how aggressive it trades (takes effect within a minute) |
+| `./deckbot risk conservative` | change how aggressive it trades (takes effect at the next market check, within 5 minutes) |
 | `./deckbot dashboard` | show the link to the web dashboard |
+| `./deckbot report` | paper results and whether it's ready to go live |
+| `./deckbot budget kraken 750` | change a budget without resetting anything |
+| `./deckbot keys kraken` | enter or replace an exchange's API keys (checked before saving) |
+| `./deckbot coins BTC,ETH,SOL` | change which coins it trades |
+| `./deckbot backup` / `restore` | encrypted backup of keys, settings and history / bring one back |
+| `./deckbot alerts my-long-topic` | turn on phone alerts (`alerts test` sends a test, `alerts none` turns them off) |
 | `./deckbot setup` | change exchanges, budget, coins or risk |
 
 **Web dashboard and Quick Access panel:** the bot runs a control panel on the Deck. Run
-`./deckbot dashboard` to get the link. The dashboard shows equity, profit over time, positions,
-trades and the AI, with buttons for risk level, pause, paper/live mode and emergency sell. Going
+`./deckbot dashboard` to get the link. The dashboard shows equity, profit over time, a **Ready to go
+live?** report, positions, trades, the activity log and the AI, with buttons for risk level, pause,
+paper/live mode, budgets, phone alerts and emergency sell, plus **Download all trades (CSV)**. Going
 live asks you to type `GO LIVE`; emergency sell asks you to type `SELL`. `./deckbot dashboard lan on`
 lets your phone on the same Wi-Fi open it too. The separate **Bot Panel** Decky plugin adds the
 main controls to the Quick Access menu. The panel only listens on this Deck unless LAN is on, and
 anyone with the link can trade your account, so keep it private.
 
-**Phone alerts:** install the free **ntfy** app and subscribe to the topic you chose in setup.
-You'll get a notification for every buy, every sell, and any problem.
+**Phone alerts:** install the free **ntfy** app and subscribe to your topic (set it with
+`./deckbot alerts <topic>` or on the dashboard; pick a long, private name). You'll get every buy,
+every sell, any problem, a warning if the bot stops checking the market, and a weekly summary. A
+separate watchdog checks every 10 minutes, so you hear about a stalled bot even if the bot is stuck.
+
+**Ready to go live?** `./deckbot report` (also on the dashboard and panel) shows days running,
+closed trades, winners, profit or loss, the worst drop, and how simply holding Bitcoin did over the
+same time. It says to keep waiting until there are at least 30 days and 6 closed trades, then
+whether paper trading lost money, made less than holding Bitcoin, or did better.
+
+**Keys from the dashboard or Quick Access panel:** the 🔑 Keys card lets you enter Kraken keys or pick
+your Coinbase `cdp_api_key.json` file (the panel finds it in Downloads). Keys are checked with the
+exchange before they're saved, stored only in `data/keys.json`, and never shown again: the screens
+only say "✓ set (…ab12)". For safety the dashboard only accepts keys on the Deck itself, never over
+Wi-Fi, and keys can't be swapped while live positions are open. Exchange API keys can only be
+created on the exchange's own website; the card shows how.
+
+**Pop-ups while gaming:** the Bot Panel plugin shows a Steam notification for every buy and sell, if a
+bot stops checking the market, and if it hits its daily loss limit, even with Quick Access closed.
+Turn it off in the panel's ⚙️ section.
+
+**Budget:** `./deckbot budget kraken 750` (or the Budget box on the dashboard) adds or takes back
+money without resetting the bot. Money in an open position can't be taken back until it's sold.
+In live mode, raising the budget checks that the exchange account has enough free.
 
 ## The AI
 A trend bot only gets a few buy signals a month. That's far too few to learn from its own trades.
@@ -117,6 +146,22 @@ AI: shadow mode | 231 historical signals, walk-forward test on 139: AUC 0.54
 "R" is the amount risked per trade. In this example the AI isn't adding anything yet, so it
 stays out of the way. It's normal for it to stay in shadow mode for long stretches. Real crypto
 patterns are weak, and the bot won't pretend otherwise.
+
+## Backups and updates
+- **💾 Back up** (dashboard, Quick Access panel, or `./deckbot backup`): saves your keys, settings, AI training and trade history to an
+  SD card or USB stick if one is inserted, otherwise to `~/Documents/bot-backups`. The backup is
+  encrypted with a password you choose. Write the password down: without it the backup can't be
+  opened, and nobody can recover it.
+- **♻️ Restore** (same places, or `./deckbot restore`): the bot stops, your current data is moved aside to
+  `data.before-restore-…` (never deleted), the backup is restored, and the bot starts again.
+- **After reinstalling SteamOS:** extract the zip into your home folder and run `./install.sh`. If it
+  finds a backup on your SD card, USB stick or in Documents, it offers to restore it instead of setting
+  up from scratch.
+- **⬆️ Updates:** download the new `deckbot.zip` on the Deck (into Downloads), then press **Install update**
+  on the dashboard or in the Quick Access panel. Only a genuine DeckBot zip is accepted. Your `data/`
+  folder is never touched, and the previous version is kept in `.previous/`.
+- For safety, backups, restores and updates only work on the Deck itself (or in the Quick Access panel),
+  never from another device over Wi-Fi.
 
 ## Things to know
 - **Expect losses on most trades.** Trend-following usually loses on more trades than it wins

@@ -54,7 +54,10 @@
   button.danger { color: var(--bad); }
   button.danger.solid { background: var(--bad); color: #fff; border-color: var(--bad); }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  input[type=text], input[type=number] {
+  select { font: inherit; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+           color: var(--ink); min-height: 40px; width: 100%; margin-top: 6px; }
+  #maintCard input { margin-top: 6px; }
+  input[type=text], input[type=number], input[type=password] {
     font: inherit; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line);
     background: var(--card); color: var(--ink); min-height: 40px; width: 100%;
   }
@@ -78,6 +81,46 @@
   .modal .card { max-width: 420px; width: 100%; margin: 0; }
   .login { max-width: 420px; margin: 40px auto; }
   .hidden { display: none !important; }
+  .banner { border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-weight: 600; background: #b91c1c; color: #fff; }
+  .verdict { font-size: 16px; font-weight: 650; padding: 10px 12px; border-radius: 10px; background: var(--chip); margin-bottom: 12px;
+             border-left: 5px solid var(--accent); }
+  .verdict.good { border-left-color: var(--good); } .verdict.bad { border-left-color: var(--bad); }
+  .verdict.mixed { border-left-color: var(--warn); }
+  #reportCard { border-top: 3px solid var(--accent); }
+  .card.danger-zone { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+  .chip.live-dot::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+                           background: currentColor; margin-right: 6px; vertical-align: 1px; }
+  .verdict.good { color: var(--good); } .verdict.bad { color: var(--bad); } .verdict.mixed { color: var(--warn); }
+  .verdict.wait, .verdict.live { color: var(--accent); }
+  .grid.mini { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 0; }
+  .grid.mini .tile { background: var(--chip); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+  .grid.mini .tile .stat-value { font-size: 17px; }
+  input.grow { flex: 1 1 180px; width: auto; min-width: 0; }
+  .axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; margin-top: 6px; }
+  .legend .sw { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .legend .sw.dash { background: repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 7px); }
+  a.ext { color: var(--accent); text-decoration: none; }
+  a.ext:hover { text-decoration: underline; }
+  .key-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .key-row:last-child { border-bottom: 0; }
+  .key-form { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .key-form h3 { font-size: 14px; margin: 0 0 6px; text-transform: capitalize; }
+  .key-form input, .key-form textarea { margin-top: 6px; }
+  textarea { font: 12px ui-monospace, Menlo, Consolas, monospace; width: 100%; min-height: 70px; padding: 8px; border-radius: 10px;
+             border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  .secret-label { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .secret { font: 13px ui-monospace, Menlo, Consolas, monospace; background: var(--chip); padding: 8px 10px; border-radius: 8px;
+            word-break: break-all; margin: 4px 0; user-select: all; }
+  .budget-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .budget-row label { min-width: 80px; font-weight: 600; text-transform: capitalize; }
+  .budget-row input { flex: 1 1 120px; width: auto; min-width: 0; }
+  .log { max-height: 380px; overflow-y: auto; font: 12.5px/1.5 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .log .ln { padding: 2px 0; border-bottom: 1px solid var(--line); word-break: break-word; }
+  .log .ln:last-child { border-bottom: 0; }
+  .log .t { color: var(--muted); margin-right: 8px; }
+  .log .warn { color: var(--warn); }
+  .log .err { color: var(--bad); }
   .other { padding: 10px 0; border-bottom: 1px solid var(--line); }
   .other:last-child { border-bottom: 0; }
   .other .title { font-weight: 650; }
@@ -95,39 +138,49 @@
   </header>
 
   <section id="login" class="card login hidden">
-    <h2>Connect</h2>
+    <h2>🔑 Connect</h2>
     <p class="stat-sub" style="margin-top:0">Paste the dashboard token. Run <b>dashboard</b> in the terminal to see it, or open the link it prints.</p>
     <div class="row">
       <input type="text" id="tokenInput" placeholder="Dashboard token" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <button id="tokenSave">Connect</button>
+      <button id="tokenSave">🔓 Connect</button>
     </div>
     <div class="hint" id="loginMsg"></div>
   </section>
 
   <main id="main" class="hidden">
+    <div class="banner hidden" id="powerBanner"></div>
     <div class="grid" id="stats"></div>
 
+    <section class="card" id="reportCard">
+      <h2>🏁 Ready to go live?</h2>
+      <div id="verdict" class="verdict"></div>
+      <div class="grid mini" id="reportStats"></div>
+      <div class="hint" id="reportNote"></div>
+    </section>
+
     <section class="card hidden" id="othersCard">
-      <h2>Other bots on this Deck</h2>
+      <h2>🤝 Other bots on this Deck</h2>
       <div id="others"></div>
       <div class="hint">Each bot has its own dashboard link. Run its <b>dashboard</b> command in the terminal to get it.</div>
     </section>
 
     <section class="card">
-      <h2>Profit and loss over time</h2>
-      <svg class="chart" id="chart" viewBox="0 0 600 180" preserveAspectRatio="none" role="img" aria-label="Cumulative profit and loss"></svg>
+      <h2 id="chartTitle">📊 Profit and loss over time</h2>
+      <svg class="chart" id="chart" viewBox="0 0 600 180" preserveAspectRatio="none" role="img" aria-label="Chart of results over time"></svg>
+      <div class="axis"><span id="chartFrom"></span><span id="chartTo"></span></div>
+      <div class="legend" id="chartLegend"></div>
       <div class="hint" id="chartNote"></div>
     </section>
 
     <div class="controls">
       <section class="card">
-        <h2>Risk</h2>
+        <h2>🎯 Risk</h2>
         <div class="seg" id="riskButtons"></div>
         <div class="hint" id="riskText"></div>
       </section>
 
       <section class="card" id="sizeCard">
-        <h2>Trade size</h2>
+        <h2>💰 Trade size</h2>
         <div class="seg" id="sizeButtons"></div>
         <div class="row" style="margin-top:8px">
           <input type="number" id="sizeCustom" step="0.01" min="0.01" placeholder="Custom SOL" style="max-width:160px">
@@ -137,39 +190,101 @@
       </section>
 
       <section class="card">
-        <h2>Running</h2>
+        <h2>⏯️ Running</h2>
         <div class="row">
           <button id="pauseBtn">Pause new buys</button>
         </div>
         <div class="hint" id="pauseText"></div>
-        <h2 style="margin-top:16px">Mode</h2>
+        <h2 style="margin-top:16px">🔀 Mode</h2>
         <div class="row">
-          <button id="paperBtn">Paper (pretend money)</button>
-          <button id="liveBtn" class="danger">Go live (real money)</button>
+          <button id="paperBtn">📝 Paper (pretend money)</button>
+          <button id="liveBtn" class="danger">🚀 Go live (real money)</button>
         </div>
         <div class="hint" id="modeText"></div>
       </section>
 
-      <section class="card">
-        <h2>Emergency</h2>
-        <button id="sellAllBtn" class="danger">Sell everything and stop</button>
+      <section class="card" id="settingsCard">
+        <h2>🔔 Phone alerts</h2>
+        <div class="row">
+          <input type="text" id="alertTopic" class="grow" placeholder="ntfy topic, e.g. rey-deckbot-7f3k9" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button id="alertSave">💾 Save</button>
+          <button id="alertTest">🔔 Send test</button>
+        </div>
+        <div class="hint" id="alertText"></div>
+        <div id="coinsBox" class="hidden">
+          <h2 style="margin-top:16px">🪙 Coins</h2>
+          <div class="row">
+            <input type="text" id="coinsInput" class="grow" placeholder="BTC,ETH,SOL" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <button id="coinsSave">💾 Save</button>
+          </div>
+          <div class="hint">Comma separated. Coins it already holds are still managed until sold.</div>
+        </div>
+        <div id="budgetBox" class="hidden">
+          <h2 style="margin-top:16px">🏦 Budget</h2>
+          <div id="budgetRows"></div>
+          <div class="hint">Raising adds money the bot may use; lowering takes back money that isn't in a position. Nothing else resets.</div>
+        </div>
+      </section>
+
+      <section class="card" id="keysCard">
+        <h2>🔑 Keys</h2>
+        <div id="keysList"></div>
+        <div id="keysLocalNote" class="hint hidden">For safety, keys can only be entered on the Deck itself (open the dashboard there) or in the Quick Access panel.</div>
+        <div id="keysForms"></div>
+        <div class="hint">Keys are checked before they're saved, stored only on this Deck, and never shown again here.</div>
+      </section>
+
+      <section class="card" id="maintCard">
+        <h2>⬆️ Updates</h2>
+        <div id="updText" class="stat-sub"></div>
+        <div class="row" style="margin-top:8px">
+          <button id="updCheck">🔍 Check Downloads</button>
+          <button id="updInstall" class="hidden">⬆️ Install update</button>
+        </div>
+        <div class="hint">Download the new bot zip on this Deck, then press Install. Your settings, keys and history are kept.</div>
+        <h2 style="margin-top:16px">💾 Backup</h2>
+        <select id="bkDest"></select>
+        <input type="password" id="bkPw" placeholder="Backup password (8+ characters)" autocomplete="new-password">
+        <input type="password" id="bkPw2" placeholder="Type the password again" autocomplete="new-password">
+        <div class="row" style="margin-top:8px"><button id="bkSave">💾 Back up now</button></div>
+        <div class="hint">Saves your keys, wallets, settings, AI training and trade history, encrypted with this password. Without the password the backup can't be opened, so write it down.</div>
+        <h2 style="margin-top:16px">♻️ Restore</h2>
+        <select id="rsFile"></select>
+        <input type="password" id="rsPw" placeholder="Backup password" autocomplete="off">
+        <div class="row" style="margin-top:8px"><button id="rsGo" class="danger">♻️ Restore…</button></div>
+        <div class="hint">Your current data is moved aside, not deleted.</div>
+        <div id="maintLocalNote" class="hint hidden">For safety, updates, backups and restores only work on the Deck itself (or in the Quick Access panel).</div>
+      </section>
+
+      <section class="card danger-zone">
+        <h2>🚨 Emergency</h2>
+        <button id="sellAllBtn" class="danger">🛑 Sell everything and stop</button>
         <div class="hint">Closes every position the bot holds, then stops the bot.</div>
       </section>
     </div>
 
     <section class="card">
-      <h2>Open positions</h2>
+      <h2>📂 Open positions</h2>
       <div id="positions"></div>
     </section>
 
     <section class="card">
-      <h2>AI</h2>
+      <h2>🧠 AI</h2>
       <div id="ai" class="stat-sub" style="white-space:pre-line"></div>
     </section>
 
     <section class="card">
-      <h2>Recent trades</h2>
+      <div class="row" style="justify-content:space-between; margin-bottom:6px">
+        <h2 style="margin:0">🧾 Recent trades</h2>
+        <button id="csvBtn">⬇️ Download all trades (CSV)</button>
+      </div>
       <div class="tablewrap"><table id="trades"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>📜 Activity log</h2>
+      <div id="log" class="log"></div>
+      <div class="hint">Newest first. The full log is in Konsole: run <b>logs</b>.</div>
     </section>
   </main>
 </div>
@@ -184,6 +299,22 @@
       <button id="confirmCancel">Cancel</button>
       <button id="confirmOk" class="danger solid">Confirm</button>
     </div>
+  </div>
+</div>
+
+<div class="modal" id="secretModal">
+  <div class="card">
+    <h2>🪄 Your new wallet</h2>
+    <p class="stat-sub" style="margin-top:0">Back up the private key now. It's the only way to move money out of this wallet. Import it into Phantom or Solflare, or write it down and keep it somewhere safe.</p>
+    <div class="secret-label">Wallet address (send SOL here to fund it)</div>
+    <div class="secret" id="secretWallet"></div>
+    <button id="copyWallet">📋 Copy address</button>
+    <div class="secret-label">Private key - keep it secret</div>
+    <div class="secret" id="secretKey"></div>
+    <button id="copyKey">📋 Copy private key</button>
+    <div class="hint" id="secretOld"></div>
+    <label class="row" style="margin-top:10px"><input type="checkbox" id="secretSaved"> I've backed up the private key</label>
+    <div class="row" style="justify-content:flex-end; margin-top:10px"><button id="secretDone" disabled>Done</button></div>
   </div>
 </div>
 
@@ -265,24 +396,32 @@
     });
   }
 
+  var BOT_ICON = { DeckBot: "📈", PumpBot: "⚡" };
+  var RISK_ICON = { conservative: "🛡️", moderate: "⚖️", aggressive: "🔥" };
+  var VERDICT_ICON = { wait: "⏳", good: "✅", bad: "❌", mixed: "⚠️", live: "💵" };
+  function botIcon(name) { return BOT_ICON[name] || "🤖"; }
+
   function renderChips(s) {
     var c = $("chips");
     c.textContent = "";
     c.appendChild(el("span", "chip " + (s.mode === "live" ? "live" : "paper"),
-      s.mode === "live" ? "LIVE - real money" : "PAPER - pretend money"));
-    if (s.paused) c.appendChild(el("span", "chip warn", "Paused"));
-    if (s.halted) c.appendChild(el("span", "chip warn", "Daily loss limit hit"));
-    if (s.health) c.appendChild(el("span", "chip" + (s.health.status === "running" ? " ok" : " warn"), s.health.text));
+      s.mode === "live" ? "💵 LIVE - real money" : "📝 PAPER - pretend money"));
+    if (s.paused) c.appendChild(el("span", "chip warn", "⏸️ Paused"));
+    if (s.halted) c.appendChild(el("span", "chip warn", "🧯 Daily loss limit hit"));
+    if (s.health) c.appendChild(el("span", "chip" + (s.health.status === "running" ? " ok live-dot" : " warn"),
+      (s.health.status === "running" ? "" : s.health.status === "stale" ? "🟠 " : "⏳ ") + s.health.text));
+    if (s.awake && s.open_count > 0) c.appendChild(el("span", "chip" + (s.awake.active ? " ok" : " warn"),
+      (s.awake.active ? "🌙 " : "⚠️ ") + s.awake.text));
   }
 
   function renderStats(s) {
     var box = $("stats");
     box.textContent = "";
     var cards = [
-      [s.equity_label || "Equity", fmt(s.equity, s.decimals), s.currency, ""],
-      ["Total P&L", signed(s.pnl_total, s.decimals) + " " + s.currency, "", cls(s.pnl_total)],
-      ["Today", signed(s.pnl_day, s.decimals) + " " + s.currency, "", cls(s.pnl_day)],
-      ["Open positions", String(s.open_count), "of up to " + s.max_open, ""]
+      ["💰 " + (s.equity_label || "Equity"), fmt(s.equity, s.decimals), s.currency, ""],
+      [(s.pnl_total < 0 ? "📉" : "📈") + " Total P&L", signed(s.pnl_total, s.decimals) + " " + s.currency, "", cls(s.pnl_total)],
+      ["📅 Today", signed(s.pnl_day, s.decimals) + " " + s.currency, "", cls(s.pnl_day)],
+      ["📂 Open positions", String(s.open_count), "of up to " + s.max_open, ""]
     ];
     cards.forEach(function (c) {
       var card = el("div", "card");
@@ -300,51 +439,374 @@
     box.textContent = "";
     list.forEach(function (o) {
       var row = el("div", "other");
-      var head = el("div", "title", o.bot || "Bot");
+      var head = el("div", "title", botIcon(o.bot) + " " + (o.bot || "Bot") + " ");
       if (o.mode) head.appendChild(el("span", "chip " + (o.mode === "live" ? "live" : "paper"),
         o.mode === "live" ? "LIVE" : "paper"));
       row.appendChild(head);
+      if (o.token && o.port && !o.error) {
+        var link = el("a", "ext", "Open " + (o.bot || "its") + " dashboard ↗");
+        link.href = "http://" + location.hostname + ":" + Number(o.port) + "/#t=" + encodeURIComponent(o.token);
+        link.target = "_blank"; link.rel = "noopener noreferrer";
+        link.style.marginLeft = "8px"; link.style.fontSize = "13px"; link.style.fontWeight = "500";
+        head.appendChild(link);
+      }
       if (o.error || o.equity === undefined) {
         row.appendChild(el("div", "line", o.error || "Not set up on this Deck."));
       } else {
         var cur = o.currency || "";
         var d = o.decimals === undefined ? 2 : o.decimals;
-        var txt = "Balance " + fmt(o.equity, d) + " " + cur + "  ·  Today " + signed(o.pnl_day, d) + " " + cur +
+        var txt = "💰 " + fmt(o.equity, d) + " " + cur + "  ·  Today " + signed(o.pnl_day, d) + " " + cur +
           "  ·  " + (o.open_count || 0) + " open" + (o.paused ? "  ·  paused" : "") + (o.halted ? "  ·  daily limit hit" : "");
         row.appendChild(el("div", "line", txt));
-        if (o.health) row.appendChild(el("div", "line " + (o.health.status === "running" ? "pos" : "neg"), o.health.text));
+        if (o.health) row.appendChild(el("div", "line " + (o.health.status === "running" ? "pos" : "neg"),
+          (o.health.status === "running" ? "🟢 " : "🟠 ") + o.health.text));
       }
       box.appendChild(row);
     });
   }
 
-  function renderChart(points) {
+  function renderLog(s) {
+    var box = $("log");
+    // keep the reader's place if they've scrolled down into older lines
+    var prev = box.scrollTop, atTop = prev < 8;
+    box.textContent = "";
+    var lines = (s.log || []).slice().reverse();
+    if (!lines.length) { box.appendChild(el("div", "empty", "No activity yet.")); return; }
+    lines.forEach(function (l) {
+      var lvl = (l.level || "").toUpperCase();
+      var row = el("div", "ln" + (lvl === "WARNING" ? " warn" : (lvl === "ERROR" || lvl === "CRITICAL") ? " err" : ""));
+      row.appendChild(el("span", "t", (l.date ? l.date.slice(5) + " " : "") + l.time));
+      var ic = lvl === "WARNING" ? "⚠️ " : (lvl === "ERROR" || lvl === "CRITICAL") ? "❌ " : "";
+      row.appendChild(document.createTextNode(ic + (lvl && lvl !== "INFO" ? lvl + ": " : "") + l.text));
+      box.appendChild(row);
+    });
+    box.scrollTop = atTop ? 0 : prev;
+  }
+
+  function renderPower(s) {
+    var b = $("powerBanner"), p = s.power || {};
+    var show = s.battery_sensitive && p.on_battery && s.open_count > 0;
+    b.classList.toggle("hidden", !show);
+    if (show) b.textContent = "🪫 On battery (" + p.percent + "%) while " + s.bot + " holds " + s.open_count +
+      " position(s). It can't sell if the Deck sleeps or runs flat - plug it in.";
+  }
+
+  function tile(label, value, cl) {
+    var t = el("div", "tile");
+    t.appendChild(el("div", "stat-label", label));
+    t.appendChild(el("div", "stat-value " + (cl || ""), value));
+    return t;
+  }
+
+  function renderReport(s) {
+    var r = s.report;
+    $("reportCard").classList.toggle("hidden", !r);
+    if (!r) return;
+    $("reportCard").querySelector("h2").textContent = r.mode === "live" ? "💵 Live results" : "🏁 Ready to go live?";
+    var v = $("verdict");
+    v.className = "verdict " + (r.verdict ? r.verdict.level : "");
+    v.textContent = r.verdict ? (VERDICT_ICON[r.verdict.level] || "") + " " + r.verdict.text : "";
+    var box = $("reportStats");
+    box.textContent = "";
+    var d = s.decimals === undefined ? 2 : s.decimals;
+    box.appendChild(tile("📅 Days running", String(Math.floor(r.days || 0)) + (r.mode === "live" ? "" : " / " + r.min_days)));
+    box.appendChild(tile("🔁 Closed trades", String(r.trades) + (r.mode === "live" ? "" : " / " + r.min_trades)));
+    box.appendChild(tile("🏆 Winners", r.win_rate === null || r.win_rate === undefined ? "-" : Math.round(r.win_rate * 100) + "%"));
+    box.appendChild(tile("💰 Profit/loss", signed(r.pnl, d) + " " + r.currency +
+      (r.return_pct === null || r.return_pct === undefined ? "" : " (" + signed(r.return_pct * 100, 1) + "%)"), cls(r.pnl)));
+    box.appendChild(tile("📉 Worst drop", fmt(r.worst_drop, d) + " " + r.currency +
+      (r.worst_drop_pct ? " (" + fmt(r.worst_drop_pct * 100, 1) + "%)" : ""), r.worst_drop > 0 ? "neg" : ""));
+    if (r.bench && r.bench.return_pct !== null && r.bench.return_pct !== undefined)
+      box.appendChild(tile("🪙 Holding " + r.bench.name, signed(r.bench.return_pct * 100, 1) + "%", cls(r.bench.return_pct)));
+    $("reportNote").textContent = r.mode === "live" ? "" :
+      "Judged after " + r.min_days + " days and " + r.min_trades + " closed trades. Past results don't guarantee future ones.";
+  }
+
+  var alertDirty = false, coinsDirty = false;
+  function renderSettings(s) {
+    var a = s.alerts || {};
+    var inp = $("alertTopic");
+    if (!alertDirty && document.activeElement !== inp) inp.value = a.topic || "";
+    $("alertTest").disabled = !a.set;
+    $("alertText").textContent = a.set
+      ? "Alerts go to '" + a.topic + "' in the ntfy app: buys, sells, problems, a stall warning and a weekly summary."
+      : "Off. Pick a long, private topic name and subscribe to it in the free ntfy app.";
+    var cb = $("coinsBox");
+    cb.classList.toggle("hidden", !s.coins);
+    if (s.coins && !coinsDirty && document.activeElement !== $("coinsInput")) $("coinsInput").value = s.coins.join(",");
+    var box = $("budgetBox"), rows = $("budgetRows"), list = s.budgets || [];
+    box.classList.toggle("hidden", list.length === 0);
+    if (rows.querySelector("input[data-dirty]") || (document.activeElement && rows.contains(document.activeElement))) return;
+    rows.textContent = "";
+    list.forEach(function (b) {
+      var row = el("div", "budget-row");
+      row.appendChild(el("label", "", b.exchange));
+      var i = document.createElement("input");
+      i.type = "number"; i.min = "10"; i.step = "10"; i.value = b.budget;
+      i.addEventListener("input", function () { i.setAttribute("data-dirty", "1"); });
+      row.appendChild(i);
+      var btn = el("button", "", "Set");
+      btn.addEventListener("click", function () {
+        var v = parseFloat(i.value);
+        if (!(v >= 10)) { toast("Pick a budget of at least 10."); return; }
+        i.removeAttribute("data-dirty");
+        act("budget", { exchange: b.exchange, amount: v });
+      });
+      row.appendChild(btn);
+      row.appendChild(el("span", "stat-sub", b.quote + (b.free !== null && b.free !== undefined ? " · " + fmt(b.free, 2) + " not in positions" : "")));
+      rows.appendChild(row);
+    });
+  }
+
+  var NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function drawLines(series, zeroLine) {
+    // series: [{values: [...], color, dash}] all the same length (null = gap)
     var svg = $("chart");
     svg.textContent = "";
-    var NS = "http://www.w3.org/2000/svg";
-    if (!points || points.length < 2) {
-      $("chartNote").textContent = "The chart fills in after the first closed trade.";
+    var all = [];
+    series.forEach(function (sr) { sr.values.forEach(function (v) { if (v !== null && v !== undefined) all.push(v); }); });
+    var W = 600, H = 180, P = 12;
+    var min = Math.min.apply(null, all), max = Math.max.apply(null, all);
+    if (zeroLine) { min = Math.min(0, min); max = Math.max(0, max); }
+    if (max === min) { max = min + 1; min = min - 1; }
+    var pad = (max - min) * 0.06; min -= pad; max += pad;
+    var n = series[0].values.length;
+    var x = function (i) { return P + (W - 2 * P) * i / Math.max(1, n - 1); };
+    var y = function (v) { return P + (H - 2 * P) * (1 - (v - min) / (max - min)); };
+    if (zeroLine) svg.appendChild(svgEl("line", { x1: P, x2: W - P, y1: y(0), y2: y(0), stroke: "currentColor",
+      "stroke-opacity": "0.25", "stroke-dasharray": "4 4", "vector-effect": "non-scaling-stroke" }));
+    series.forEach(function (sr) {
+      var pts = [];
+      sr.values.forEach(function (v, i) { if (v !== null && v !== undefined) pts.push(x(i).toFixed(1) + "," + y(v).toFixed(1)); });
+      if (pts.length < 2) return;
+      var attrs = { points: pts.join(" "), fill: "none", stroke: sr.color, "stroke-width": sr.width || "2.5",
+                    "vector-effect": "non-scaling-stroke", "stroke-linejoin": "round" };
+      if (sr.dash) attrs["stroke-dasharray"] = "6 5";
+      svg.appendChild(svgEl("polyline", attrs));
+    });
+    return { min: min + pad, max: max - pad };
+  }
+  function legendItem(box, label, color, dash) {
+    var it = el("span");
+    var sw = el("span", "sw" + (dash ? " dash" : ""));
+    if (!dash) sw.style.background = color;
+    it.appendChild(sw);
+    it.appendChild(document.createTextNode(label));
+    box.appendChild(it);
+  }
+  var isLocal = ["127.0.0.1", "localhost", "::1", "[::1]"].indexOf(location.hostname) >= 0;
+  var keysBuiltFor = null;
+  function pwInput(placeholder) {
+    var i = document.createElement("input");
+    i.type = "password"; i.placeholder = placeholder; i.autocomplete = "off"; i.spellcheck = false;
+    i.setAttribute("autocapitalize", "off");
+    return i;
+  }
+  function textInput(placeholder) {
+    var i = document.createElement("input");
+    i.type = "text"; i.placeholder = placeholder; i.autocomplete = "off"; i.spellcheck = false;
+    i.setAttribute("autocapitalize", "off");
+    return i;
+  }
+  function sendKeys(value, inputs) {
+    act("keys", value, undefined, function (r) {
+      if (r.ok) inputs.forEach(function (i) { i.value = ""; });
+    });
+  }
+  function renderKeys(s) {
+    var card = $("keysCard"), list = $("keysList");
+    card.classList.toggle("hidden", !s.keys);
+    if (!s.keys) return;
+    list.textContent = "";
+    s.keys.forEach(function (k) {
+      var row = el("div", "key-row");
+      row.appendChild(el("span", "", k.name.charAt(0).toUpperCase() + k.name.slice(1)));
+      row.appendChild(el("span", k.set ? "pos" : "neg", k.set ? "✓ set" + (k.hint ? " (" + k.hint + ")" : "") : "✗ not set"));
+      list.appendChild(row);
+    });
+    $("keysLocalNote").classList.toggle("hidden", isLocal);
+    var forms = $("keysForms");
+    var sig = s.bot + "|" + s.keys.map(function (k) { return k.name; }).join(",") + "|" + isLocal;
+    if (keysBuiltFor === sig) {
+      var gen = $("genWalletBtn");
+      if (gen) gen.disabled = !isLocal || !s.can_generate_wallet;
       return;
     }
-    var W = 600, H = 180, P = 12;
-    var min = Math.min(0, Math.min.apply(null, points)), max = Math.max(0, Math.max.apply(null, points));
-    if (max === min) { max = min + 1; }
-    var x = function (i) { return P + (W - 2 * P) * i / (points.length - 1); };
-    var y = function (v) { return P + (H - 2 * P) * (1 - (v - min) / (max - min)); };
-    var zero = el("line");
-    zero.setAttribute("x1", P); zero.setAttribute("x2", W - P);
-    zero.setAttribute("y1", y(0)); zero.setAttribute("y2", y(0));
-    zero.setAttribute("stroke", "currentColor"); zero.setAttribute("stroke-opacity", "0.25");
-    zero.setAttribute("stroke-dasharray", "4 4");
-    svg.appendChild(zero);
-    var pts = points.map(function (v, i) { return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
-    var line = document.createElementNS(NS, "polyline");
-    line.setAttribute("points", pts); line.setAttribute("fill", "none");
-    line.setAttribute("stroke", points[points.length - 1] >= 0 ? "var(--good)" : "var(--bad)");
-    line.setAttribute("stroke-width", "2.5"); line.setAttribute("vector-effect", "non-scaling-stroke");
-    svg.appendChild(line);
-    $("chartNote").textContent = "Lowest " + fmt(min, 3) + ", highest " + fmt(max, 3) + ", now " +
-      fmt(points[points.length - 1], 3) + " " + (state.currency || "");
+    keysBuiltFor = sig;
+    forms.textContent = "";
+    if (!isLocal) return;
+    if (s.bot === "PumpBot") {
+      var f = el("div", "key-form");
+      f.appendChild(el("h3", "", "👛 Trading wallet"));
+      var api = pwInput("PumpPortal API key"), wal = textInput("Wallet address"), pk = pwInput("Private key backup (optional)");
+      [api, wal, pk].forEach(function (i) { f.appendChild(i); });
+      f.appendChild(el("div", "hint", "Leave a box empty to keep what's saved. A private key must belong to the wallet address."));
+      var row = el("div", "row"); row.style.marginTop = "8px";
+      var save = el("button", "", "💾 Save wallet");
+      save.addEventListener("click", function () {
+        sendKeys({ api_key: api.value.trim(), wallet: wal.value.trim(), private_key: pk.value.trim() }, [api, wal, pk]);
+      });
+      var gen = el("button", "", "🪄 Generate new wallet");
+      gen.id = "genWalletBtn";
+      gen.disabled = !s.can_generate_wallet;
+      gen.addEventListener("click", function () {
+        var held = state && state.wallet_sol ? " Your current wallet holds " + fmt(state.wallet_sol, 4) + " SOL - its keys are kept in data/old_wallets.json so you can still move that out." : "";
+        confirmThen({
+          title: "🪄 Create a new trading wallet?",
+          body: "PumpPortal creates a fresh Solana wallet (one wallet holds every pump.fun token the bot buys) and PumpBot switches to it." + held,
+          word: "NEW WALLET", ok: "Create wallet"
+        }, function (w) {
+          act("generate_wallet", undefined, w, function (r) { if (r.ok && r.data) showSecret(r.data); });
+        });
+      });
+      row.appendChild(save); row.appendChild(gen);
+      f.appendChild(row);
+      if (!s.can_generate_wallet) f.appendChild(el("div", "hint", "Generating a new wallet works in paper mode with nothing held."));
+      forms.appendChild(f);
+      return;
+    }
+    (s.keys || []).forEach(function (k) {
+      var ex = k.name;
+      var f = el("div", "key-form");
+      f.appendChild(el("h3", "", (ex === "kraken" ? "🐙 " : "🔷 ") + ex));
+      if (s.key_help && s.key_help[ex]) f.appendChild(el("div", "hint", "How to get keys: " + s.key_help[ex]));
+      var row = el("div", "row"); row.style.marginTop = "8px";
+      if (ex === "coinbase") {
+        var file = document.createElement("input");
+        file.type = "file"; file.accept = ".json,application/json";
+        var paste = document.createElement("textarea");
+        paste.placeholder = "...or paste the contents of cdp_api_key.json";
+        f.appendChild(file); f.appendChild(paste);
+        var save = el("button", "", "💾 Save Coinbase key");
+        save.addEventListener("click", function () {
+          var go = function (text) { sendKeys({ exchange: ex, json: text }, [paste, file]); };
+          if (file.files && file.files[0]) {
+            if (file.files[0].size > 20000) { toast("That file is too big to be a key file."); return; }
+            var rd = new FileReader();
+            rd.onload = function () { go(String(rd.result)); };
+            rd.readAsText(file.files[0]);
+          } else if (paste.value.trim()) {
+            go(paste.value.trim());
+          } else {
+            toast("Pick the key file or paste its contents.");
+          }
+        });
+        row.appendChild(save);
+      } else {
+        var key = pwInput("API key"), sec = pwInput("Private key");
+        f.appendChild(key); f.appendChild(sec);
+        var save2 = el("button", "", "💾 Save " + ex + " keys");
+        save2.addEventListener("click", function () {
+          if (!key.value.trim() || !sec.value.trim()) { toast("Enter both keys."); return; }
+          sendKeys({ exchange: ex, apiKey: key.value.trim(), secret: sec.value.trim() }, [key, sec]);
+        });
+        row.appendChild(save2);
+      }
+      if (k.set && state && state.mode !== "live") {
+        var rm = el("button", "danger", "Remove");
+        rm.addEventListener("click", function () { act("remove_keys", { exchange: ex }); });
+        row.appendChild(rm);
+      }
+      f.appendChild(row);
+      forms.appendChild(f);
+    });
+  }
+
+  function showSecret(d) {
+    $("secretWallet").textContent = d.wallet;
+    $("secretKey").textContent = d.private_key;
+    $("secretOld").textContent = d.old_kept ? "Your previous wallet (" + d.old_wallet.slice(0, 4) + "…" + d.old_wallet.slice(-4) +
+      ") is saved in data/old_wallets.json on the Deck." : "";
+    $("secretSaved").checked = false;
+    $("secretDone").disabled = true;
+    $("secretModal").classList.add("show");
+  }
+  function copyText(t, what) {
+    var done = function () { toast("📋 " + what + " copied."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { toast("Select it and copy by hand."); });
+    else toast("Select it and copy by hand.");
+  }
+
+  var maintSig = "";
+  function fillSelect(sel, items, empty) {
+    var keep = sel.value;
+    sel.textContent = "";
+    if (!items.length) { var o = el("option", "", empty); o.value = ""; sel.appendChild(o); return; }
+    items.forEach(function (it) { var o = el("option", "", it.label); o.value = it.path; sel.appendChild(o); });
+    if (keep && items.some(function (it) { return it.path === keep; })) sel.value = keep;
+  }
+  function renderMaint(s) {
+    var card = $("maintCard");
+    card.classList.toggle("hidden", !s.version);
+    if (!s.version) return;
+    var up = s.update;
+    $("updText").textContent = "Installed: version " + s.version + (up ? "  ·  ⬆️ version " + up.version + " found in Downloads" : "");
+    $("updInstall").classList.toggle("hidden", !up);
+    if (up) $("updInstall").textContent = "⬆️ Install version " + up.version;
+    ["updCheck", "updInstall", "bkSave", "rsGo", "bkPw", "bkPw2", "rsPw", "bkDest", "rsFile"].forEach(function (id) { $(id).disabled = !isLocal; });
+    $("maintLocalNote").classList.toggle("hidden", isLocal);
+    var sig = JSON.stringify([s.backup_places, s.backups]);
+    if (sig !== maintSig && document.activeElement !== $("bkDest") && document.activeElement !== $("rsFile")) {
+      maintSig = sig;
+      fillSelect($("bkDest"), s.backup_places || [], "No place to save");
+      fillSelect($("rsFile"), (s.backups || []).map(function (b) {
+        return { path: b.path, label: b.label + " (" + Math.max(1, Math.round(b.size / 1024)) + " KB)" };
+      }), "No backups found yet");
+      $("rsGo").disabled = !isLocal || !(s.backups && s.backups.length);
+    }
+  }
+
+  function renderChart(s) {
+    var ec = s.equity_curve, lg = $("chartLegend");
+    lg.textContent = "";
+    $("chartFrom").textContent = ""; $("chartTo").textContent = "";
+    if (ec && ec.points && ec.points.length >= 2) {
+      var vals = ec.points.map(function (p) { return p[1]; });
+      var up = vals[vals.length - 1] >= vals[0];
+      var series = [{ values: vals, color: up ? "var(--good)" : "var(--bad)" }];
+      var hasBench = ec.bench_label && ec.points.some(function (p) { return p[2] !== null && p[2] !== undefined; });
+      if (hasBench) series.push({ values: ec.points.map(function (p) { return p[2]; }), color: "var(--muted)", dash: true, width: "2" });
+      drawLines(series, false);
+      $("chartTitle").textContent = "📊 " + (ec.label || "Equity") + " over time";
+      $("chartFrom").textContent = ec.points[0][0];
+      $("chartTo").textContent = ec.points[ec.points.length - 1][0];
+      legendItem(lg, (ec.label || "Equity") + ": " + fmt(vals[vals.length - 1], s.decimals) + " " + ec.currency, up ? "var(--good)" : "var(--bad)");
+      if (hasBench) {
+        var bl = ec.points[ec.points.length - 1][2];
+        legendItem(lg, ec.bench_label + " instead: " + fmt(bl, s.decimals) + " " + ec.currency, "", true);
+      }
+      $("chartNote").textContent = hasBench ? "The dashed line is what the same money would be worth if you'd just held Bitcoin." : "";
+      return;
+    }
+    var points = s.curve;
+    $("chartTitle").textContent = "📊 Profit and loss over time";
+    if (!points || points.length < 2) {
+      $("chart").textContent = "";
+      $("chartNote").textContent = "The chart fills in as the bot runs (an hour or so for the first points).";
+      return;
+    }
+    var r = drawLines([{ values: points, color: points[points.length - 1] >= 0 ? "var(--good)" : "var(--bad)" }], true);
+    $("chartNote").textContent = "Closed trades only. Lowest " + fmt(r.min, 3) + ", highest " + fmt(r.max, 3) + ", now " +
+      fmt(points[points.length - 1], 3) + " " + (s.currency || "");
+  }
+
+  function safeUrl(u) { return typeof u === "string" && /^https:\/\/pump\.fun\/coin\/[A-Za-z0-9]+$/.test(u) ? u : null; }
+  function nameCell(name, url) {
+    var td = el("td", "name");
+    var u = safeUrl(url);
+    if (u) {
+      var a = el("a", "ext", name + " ↗");
+      a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+      td.appendChild(a);
+    } else {
+      td.textContent = name;
+    }
+    return td;
   }
 
   function renderPositions(s) {
@@ -361,7 +823,7 @@
     t.appendChild(head);
     s.positions.forEach(function (p) {
       var tr = el("tr");
-      tr.appendChild(el("td", "name", p.name));
+      tr.appendChild(nameCell(p.name, p.url));
       tr.appendChild(el("td", "", p.detail));
       var ch = p.pnl_pct === null || p.pnl_pct === undefined ? "-" : signed(p.pnl_pct * 100, 1) + "%";
       tr.appendChild(el("td", cls(p.pnl_pct), ch));
@@ -384,8 +846,8 @@
     s.trades.forEach(function (r) {
       var tr = el("tr");
       tr.appendChild(el("td", "", r.time));
-      tr.appendChild(el("td", r.side === "sell" ? "" : "pos", r.side));
-      tr.appendChild(el("td", "name", r.name));
+      tr.appendChild(el("td", r.side === "sell" ? "" : "pos", r.side === "sell" ? "💸 sell" : "🛒 buy"));
+      tr.appendChild(nameCell(r.name, r.url));
       tr.appendChild(el("td", "", r.amount));
       tr.appendChild(el("td", cls(r.pnl), r.pnl === null || r.pnl === undefined ? "" : signed(r.pnl, s.decimals)));
       t.appendChild(tr);
@@ -394,32 +856,38 @@
 
   function render(s) {
     state = s;
-    $("title").textContent = s.bot + " dashboard";
+    $("title").textContent = botIcon(s.bot) + " " + s.bot + " dashboard";
     document.title = s.bot + " dashboard";
     $("updated").textContent = "Updated " + (s.updated || "-") + (s.message ? " - " + s.message : "");
     renderChips(s);
+    renderPower(s);
     renderStats(s);
+    renderReport(s);
+    renderSettings(s);
     renderOthers(s);
-    renderChart(s.curve);
+    renderChart(s);
+    renderKeys(s);
+    renderMaint(s);
     renderPositions(s);
     renderTrades(s);
+    renderLog(s);
     $("ai").textContent = s.ai_text || "";
 
     $("riskText").textContent = s.risk_text || "";
     setButtons($("riskButtons"), (s.presets || []).map(function (p) {
-      return { value: p, label: p.charAt(0).toUpperCase() + p.slice(1) };
+      return { value: p, label: (RISK_ICON[p] ? RISK_ICON[p] + " " : "") + p.charAt(0).toUpperCase() + p.slice(1) };
     }), s.risk_profile, function (v) { act("risk", v); }, busy);
 
     var sizeCard = $("sizeCard");
     sizeCard.classList.toggle("hidden", !(s.sizing && s.sizing.show));
     if (s.sizing && s.sizing.show) {
       setButtons($("sizeButtons"), s.sizing.options.map(function (v) {
-        return { value: v, label: v + " SOL" };
+        return { value: v, label: "◎ " + v + " SOL" };
       }), s.sizing.value, function (v) { act("size", v); }, busy);
       $("sizeText").textContent = s.sizing.text || "";
     }
 
-    $("pauseBtn").textContent = s.paused ? "Resume new buys" : "Pause new buys";
+    $("pauseBtn").textContent = s.paused ? "▶️ Resume new buys" : "⏸️ Pause new buys";
     $("pauseBtn").onclick = function () { act(s.paused ? "resume" : "pause"); };
     $("pauseText").textContent = s.paused
       ? "The bot still manages open positions, but won't buy."
@@ -453,7 +921,7 @@
   function startPolling() { stopPolling(); pollTimer = setInterval(function () { if (!busy) refresh(); }, 5000); }
   function stopPolling() { if (pollTimer) clearInterval(pollTimer); pollTimer = null; }
 
-  function act(action, value, confirm) {
+  function act(action, value, confirm, after) {
     if (busy) return;
     busy = true;
     var body = { action: action };
@@ -462,6 +930,7 @@
     api("/api/action", body).then(function (r) {
       toast(r.message || (r.ok ? "Done." : "That didn't work."));
       busy = false;
+      if (after) after(r);
       setTimeout(refresh, 800);
     }).catch(function () {
       busy = false;
@@ -499,17 +968,79 @@
   $("paperBtn").addEventListener("click", function () { if (state && state.mode !== "live") act("paper"); });
   $("liveBtn").addEventListener("click", function () {
     confirmThen({
-      title: "Trade real money?",
-      body: "The bot will start buying and selling with real funds. Trend and momentum strategies lose on many trades. Only use money you can afford to lose.",
+      title: "🚀 Trade real money?",
+      body: "The bot will start buying and selling with real funds. Trend and momentum strategies lose on many trades. Only use money you can afford to lose." +
+        (state && state.report && state.report.verdict && state.report.mode !== "live" ? "  Paper report: " + state.report.verdict.text : ""),
       word: "GO LIVE", ok: "Go live"
     }, function (w) { act("go_live", undefined, w); });
   });
   $("sellAllBtn").addEventListener("click", function () {
     confirmThen({
-      title: "Sell everything?",
+      title: "🛑 Sell everything?",
       body: "Every position the bot holds is sold at market price, then the bot stops. You'll need to start it again yourself.",
       word: "SELL", ok: "Sell everything"
     }, function (w) { act("sell_all", undefined, w); });
+  });
+  $("alertTopic").addEventListener("input", function () { alertDirty = true; });
+  $("coinsInput").addEventListener("input", function () { coinsDirty = true; });
+  $("updCheck").addEventListener("click", function () { act("check_update"); });
+  $("updInstall").addEventListener("click", function () {
+    var up = state && state.update;
+    if (!up) return;
+    confirmThen({ title: "⬆️ Install version " + up.version + "?",
+      body: "Installs " + up.name + " from Downloads and restarts the bot. Settings, keys and history are kept, and the current version is saved so it can be undone.",
+      word: "UPDATE", ok: "Install" }, function (w) { act("update", undefined, w); });
+  });
+  $("bkSave").addEventListener("click", function () {
+    var a = $("bkPw").value, b = $("bkPw2").value;
+    if (a.length < 8) { toast("Use a password of at least 8 characters."); return; }
+    if (a !== b) { toast("The two passwords don't match."); return; }
+    if (!$("bkDest").value) { toast("Pick where to save the backup."); return; }
+    act("backup", { dest: $("bkDest").value, password: a }, undefined, function (r) {
+      if (r.ok) { $("bkPw").value = ""; $("bkPw2").value = ""; }
+    });
+  });
+  $("rsGo").addEventListener("click", function () {
+    if (!$("rsFile").value) { toast("Pick a backup."); return; }
+    if (!$("rsPw").value) { toast("Enter the backup's password."); return; }
+    confirmThen({ title: "♻️ Restore this backup?",
+      body: "The bot stops, your current data is moved aside (not deleted), the backup is restored, and the bot starts again.",
+      word: "RESTORE", ok: "Restore" }, function (w) {
+      act("restore", { path: $("rsFile").value, password: $("rsPw").value }, w, function (r) { if (r.ok) $("rsPw").value = ""; });
+    });
+  });
+  $("coinsSave").addEventListener("click", function () {
+    var v = $("coinsInput").value.replace(/\s+/g, "").toUpperCase();
+    if (!/^[A-Z0-9]+(,[A-Z0-9]+)*$/.test(v)) { toast("Use coin symbols separated by commas, like BTC,ETH,SOL."); return; }
+    coinsDirty = false;
+    act("coins", v);
+  });
+  $("copyWallet").addEventListener("click", function () { copyText($("secretWallet").textContent, "Address"); });
+  $("copyKey").addEventListener("click", function () { copyText($("secretKey").textContent, "Private key"); });
+  $("secretSaved").addEventListener("change", function () { $("secretDone").disabled = !$("secretSaved").checked; });
+  $("secretDone").addEventListener("click", function () {
+    $("secretKey").textContent = ""; $("secretWallet").textContent = "";
+    $("secretModal").classList.remove("show");
+  });
+  $("alertSave").addEventListener("click", function () {
+    var t = $("alertTopic").value.trim();
+    if (t && !/^[A-Za-z0-9_-]{1,64}$/.test(t)) { toast("Use only letters, numbers, - and _ (no spaces)."); return; }
+    alertDirty = false;
+    act("alerts", t || "none");
+  });
+  $("alertTest").addEventListener("click", function () { act("test_alert"); });
+  $("csvBtn").addEventListener("click", function () {
+    fetch("/api/trades.csv", { headers: { "Authorization": "Bearer " + token } }).then(function (r) {
+      if (!r.ok) throw new Error("bad");
+      return r.blob();
+    }).then(function (blob) {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = ((state && state.bot) || "bot").toLowerCase() + "-trades-" + new Date().toISOString().slice(0, 10) + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }).catch(function () { toast("Couldn't download the trades."); });
   });
   $("sizeSet").addEventListener("click", function () {
     var v = parseFloat($("sizeCustom").value);
