@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+PY="$DIR/.venv/bin/python"
+if [ ! -x "$PY" ] || ! "$PY" -c "import ccxt" 2>/dev/null; then
+  echo "DeckBot's Python environment is missing or broken (a SteamOS update can do this)."
+  echo "Re-run: $DIR/install.sh   (your settings and keys are kept)"
+  exit 1
+fi
+exec "$PY" "$DIR/deckbot.py" "$@"
