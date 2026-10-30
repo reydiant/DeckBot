@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bucket Counter</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Buckets">
+<meta name="theme-color" content="#ECEFF2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1216" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAROElEQVR42u2de4xc1X3Hv+dxH3Nndna8Nsb4AagORNjgQngEVy0PEwdFLQmgKgmlVcKjFUFVmj8qNZUaVX1ITaOmUkVDiKkS0YgqCQVBaCOoEwNSzMMRNviF8SOsdu31enf2NY87d+7j/PrHHa/t9a5xbDNz7sz5av/zyrtz93N/53d+v/P9HbZ0+WUwMppP3DwCIwOHkYHDyMBhZOAwMnAYGTiMDBxGBg4jA4eRgcPIyMBhZOAwMnAYGTiMDBxGBg4jA4eRgcPIwGHUc5K9+bEZAAbOPvw7iUAEMnB0f5xkYAwMFCUsTlgjZJSCsjAZrkVSkC0BgAClDBxdxwRnpIj5IWvGjAiLC2pJX3L9bwUgrBiIb1rdjJIWJQRYAsMTctshx3Owe9gamZLlqkgUpIDnKIuTAusFSrocDs7BAT9kfshdi9asiK69rHnzFcF1lzeX9ScXFRXjONOawTBdY1N1vnPY2XbQ3TFo7xh0yjVhCfS5ijEo1c0rDutWU5PgIEI14FGCq1eGn17X+PQ6/xOXN/vzBEIYI04Qxh+WcACWgORwbYAhirBvxNqyJ/fyTm/rfrcZsb6csgUlipGBIyuLCIBKg3OOjdf4X1xfu32Nf1GJVAy/iVgBAGslH2eRkAIgKAIBnCFnw7YQRnjjgPvTt70fvVEoV0V/TkmBRBk4NF8mOepNlhC7Y63/6MbKhrUNKVAPEMbgDPy8d+6KoAicoc8FF9h3WG56pf/Hr+enfNHvqRQjA4eOAYOAGZ9fsSz6689N3be+rgjVAETg/KyCxG9GiYICPBuOg50fWN94ZmDLXs8SlLNVnDADh04BQ5Df5Irw6MbK1++a6vdoxgcB4uxCBZ32ujN21oFEIe/Alvjxm/lvPDMwPCEXF1SUdEXelu8rZZ8MlKty9dLoqa+MPbyhGifwQwh+phoXAaSgqFXjsiQEP+lLIFFIjv8rW5gVxsA5ogRBhBtWR/fcUD86Ld444OZdSiOZgaNzcY9BcJSr/As3177/yPi6S6PJGtjCpc+0ikUESyDvIOfCteBaKFe5H7JGxBoRCyLmN1lfjvo8uBZcG0QtVhaKKOlP9AOU8nT3Df5AIfnFbo/ALDFPTDLLSpvIIEKlwb90S/U7D5TjBH4TUiy4cCQKtkTeBRHGK3z3YXt4Qr6+360FfPugE8Un/vBxwq5e1RwoqGsva66+OL5mVXP5osRx0GzCD8GxYGKrCCD0l/D0K/mv/XBJrFjOouzuYrIKB2dIiAUhHvty+Uu31Cp+K/GcHwtqZY7lafbz3d5LO723DrqjM8JvsjTGeDYxli4gaemLgojHCcAgGC4qJletCO9c59+5zr9qZaySVp47b0JDQJKglMfeI9Z9j1386zGr31NxYuBoY8xQxBohnnho/P5b6tOVVtPkdMUJcjZcF+8Nyad+Wdy8M7f7sC0YXJtsSeI4EGq+hHT2/wtjNCMexGx5Kb5tTeO+9bWN6xoMmPEh+II/t5THoTF5z7eXDY5bxWzykT040tWkEbLvPjR+/+/VpyrzLyXp37u/D4Oj4t9eKj3zZn6sIvOO8mwitFLRs2/hMgbOKYxZNeC2wO1r/L/4zMyGdUHDRxBD8vn5KHoYHJd3f3vZ0ITMO9lbX7KXkAqOGZ8//uD4n9y2IBlxAs+GFPiPX/R99amLXnrXsyX15RTnvxkWp2SyxDiD55Alae8R+7lfFUanxDWrwmUlqjfnWWI4RyPExSV152/7z/8qXwm4JTOWn2YMDilQrooHbq38zT0z07UFyVjUh18fk19+Yum/by7FCevPJyCm6ALUptLNrWeT4Hj1vdyL2/OXlJLrr4yazXn2MpzDD7FisVqxKH52W8GWxJiB4yMkg3/h5tqTf1quNVr9kTnvd5xgoA/PvpV/4HtLdw45F/WlvdML/DdJj/8Uc2raFy+8na/U+aeubqQbojm7aMHhB/jE6mjloui/txVyNmUoeGQGDs7QCNnqpfH3Hxl3JcXJ3L1J2iErlfD0a/mHNi1txqyY+2gr2YqYJWBJvPSuNzoj7r3R5xwnb4lPrC9NfPKK6PCk2HbI9bLDR3YiB0OUsP/8yrF1l0bVBoSYhwzB8bc/WfR3zw24NjkSifrIg3j6c/s92nbI3fq+u/7KIK2dz4kfDIgTbLwmePld7+i0sK1sJB88K73WqTp/dOPMrWubU/OlGnGCYj/+8flF33x+IGcTZ+1roKdr2aK8+vke7/7vXJwoZsu5e2PGECXwHPrmfWUGmMhxIReUesSuWRk+8VA5TubpdKR5xtOv5f/+uYFSQRF14OkrQtGj4bI8PCk+d4OfKBCd8ntyhkaIq1YlMz579b1c3snA4pIBOBhDM2abHh6/akXcCOemGune5Nm3vIc2XexarSpIR6QUcjZt3Z87NsPvvakRhHMhTuPH71zR/N8dXrkqLKF7Z053OARHJeB3XN34q7tmao255QRFyNn4YEw+8MTSZswcSZ09a0OEPpfePOheujj65MeiRnhK8sEYYoVFBUDhxR15T/vgoXvOQQTB6M83zszbAU+XmK8+teTwpPRsLUqQilBw6S//a8muYSvvzLUyCIZ6A59fX1u7MvRDxpmB4/zCxu1rG7evDarB3LCRKBQ9fHdzccue3EBBl+YFESxBfpN//UeLE2KnryxhgoE++rPbK42QMQPH+TxojuNhg+ZZUPaNyH9+cVExp1fbIlHo99TmXbkfvFoo5ltHmk8PHmtW6B48uM6Wk2rAN65r3DZf2CCC4+LJLcXJGreFdou3Usg7tGlLcbrG7FOP/KRp6UAfPXJHJYy1Dh5cZztrlOC+9dXTz1MphYKLzTvcH7xWLOVVrF+3UxFyNu0bsf/pp6WcM7fswRkaAT57ff2SUtzUmA+ubW3DD9naleHvfjyo+HMLjgRIiR9u7as3mdD1ySqC59Azb/Ydm+bOnH4sQyPEkiLdfUO93tR3ZeHa1jYaIfv96/xLVinXBueIVSvzT7ON94bla3tzxRwlpG/C5Eg6NiNeeDs/GzyUQqzAgWIOVoHuuq7udnr7nck6hyVQrooPjli2pGX9SakAW7Q8jMU8/vVn/f+3yyu6pLOJiAEJYWjC+uL6GgiMoeDCc9EI2VuH3O+9VNz0Sn8t4OYk2LkEjyBijSZzbfr48mjD2sad6/zrLmuWilStsVv/YfkHY5ZjaV9HYvBD9uzXjn7qpubUOHtnyHl5p7dlT+79ESuIWM4ixyIDx7k6DxgpYo2QNSLmWvSxZdFnb/RVRP/ys1IxR/rPQeAMlYBtWNO48crwhW3ewdEWEzmb0qkQWke+TJwhnR2w0QhZEDFLUiYaVycKXzHzm8zNCBOdgUPw86ek5SRrw1mNCwo3cZaasNn5b4La9lbIdmbv03WugC5xGXdoB+Q5ZMs2RU3ZnrgaK1Zw1Lf+aLzgqkQZPs65cILHNxdf3+/mnXZs02TbkLcl3XtTrZgHEhM9zrEkzwt4cbsXxqzgtmPCYbuXFQ4VJWAGDpxLP68EtLMdI9vcghccigwc5/4A2/nozARjIwOHkYHDyMBhZOAwMnAYGTiMYAbj40PuLqETh2FMvePsZ6S23+Yp2zxgwxLHh5yw1oRXI5yxLSVF614HzsBkW4tg7S2f+zw9U5623aUgzyZDwJlMwhELIsaOT1BV7S2ft+88B2MoOCr9YIJjqs4/f3PtsQcmpmsX4JwHurGT0u/hf7bnHn5yaSmv0otdGNAIWdv4aHfkSEc7pmN63jroTlSZKylRptsy/+v0y/dzk3VBYC1LH0Fw6s7GmxStYTiMwbUxWeNhxDyLEgPCAqfXRytCcrIEzXpb2pmT8o7sVpSC5DTli30jVlZmILXdjY2pGjtw1HIsSue1t3+3wjt4ZrgWsKGyFByGDczXnZ+u8yOTUnZuxgvv7JnyrQdyZ44xPfKF004EOjbeGbQnasLqnE1cdtYQVm/yeY+USgHWS7lFOkPsLB9O98OhCK5N7wzakzWWtyk+acPS2tdQr9yNTUDOPu1MOcPWAznq2XtlZ5fVNSuiSIHNJmI+/4NvXTLldzKitnMMyXSdP/Hg2N03NtJrGFomyoANlaXsaEImOzseqVwTB0atay+P/PDEkfQ0ckzWewIOwTFV4yfXtdI3ZNpn+0Y6bAbu8I3UgmH7oPOHN/vzdWGoR+CwTh2YTwTbwt4j1nSnY2eH4VDAyJQ8veR3hky++0oacz5jeqnlZFXUAra40MkBJLyzz8W16MCoNVXL/F15F1w7hpyOT/zpZOQgQAocmZTTdX5JKTl5IuDsLZ69sKyc7kZRhEPHLIZehoNgCZqoiXcG7ctvagRRa/ZX6o2brOs4JvCjgKNe42HcOvhEBFtibIbvGrJdp8Nzi2TnByMp1JsnIuisq7YW8F6orHOGepOtWhzHxy9q4QxBxIKI8V6OHLOLy9YDuT++pZ52axOC59DjD06glyqkQRN+E+lNII6NXUP2sRnZ76nODt+VHSdDcgyVpR8wzugky3VvpZ8nX33KgEPHLB1G/8jOz2O0aN+INeOzkkezBvyePhvGsGPIIWNNSHPSaV/sPWIOdrRqoxMVtn/EcjUYlMh1iKi1gE1WhTnYkT6NMGZjFS2eBtfkiewYcmAOgBFsC/tGOl841wgOfVKwjqfngmOoLGuBFgPRuQ5z0FyHdg3ZYzPclqaIjq0HcpqMyuea/BKtsg/r8dPmc0uCvQ5HWhI9NiN3DdmOjZ5dXNKtymSNvTNou7YWA/+5PkM2dWg1adKG1KTMw/V5NDuGnF523adblQOjVrmmyxE4rstLwzFZFX7Q02kHASNTUp+7p7gulxpZtPeINeP39KkfxrB90FFmss+8RfSedUee8D+OalE41yvnMO5IHfyP+s4EO4M7Ej1wI4IO/kd94dDBAGg+vqZ1jll3ZI/mpBr4H/WNHBouum29RFID/6OuRbCT3JG9tmFJtyozGvgftR5SKxhGpiT1ZKd+rCLCWK8aoF5wKGD7oNNrw+PSwvn+EWusopd3nGv1jHrZHamD/1FjOPRrS/Z4U5prlpe13JG9c7BDK/+j1jmHbkeh2raP1cT/qPuVGqk7sneqpGnhPPU/tu2q6UzCcao7Er1TONfz8D3XbQGedUf20IZFG/+j7suKVpavthXOJ6tC6vd5uX6FZBqriP1He6KIPls433tEr8K5vne8pSMGqWdqozoMDswMHAuNGOzWrko6OFDDBJxr+DL1WhFdw8K5vnWOtIg+1QNF9LTop62bi2uZo9FETewZ7vIi+qz/cc+wLv7HDOQcmr9PvRMjubYPruvdkRr6HzMAR++4I3XzP2YBjp5xR+rmf8wGHF0/YvDE4MCjGvkfs5Fz9MKIQf27SFznZ9fFIwZ1GxyYMTjSUw7d6o7UbXBgluBI3ZF7hrvaHcnw5qGcztsxrvXNeN3rjpz1P+qcVHGNk/mudUdq63/MTOToYnektv7HLMHRre7Ilv/xqHb+x8zAkR7s2H/Umqh0YU5KwPZBR+jNPText1OF85EpqWDgMCMGtR8cmL2co1tHDGZlhhHXvx7QZSMG9RwcmEk4unLEYFY+FNf8JevOEYP6DQ7MZOTovhGDeg4OzB4c3VdEz0rhPBuRo8vckZr7H6HbXfZn6Y4EIVaZhyO9m36iKmoBW1ygxMBx/oeND45ascKSIrKedygFXsDuw9loGLGlyy/Tvw3BgQ1rfdeGUsj0pjYdD7d1vzM6rd2Qp0zCkaoacKXQBR1aIuRdlYmduczKMy152c84TqrfZGLnJbOVyhmZrayRgcPIwGFk4DAycBgZOIyMDBxGBg4jA4eRgcPIwGFk4DAycBgZOIwMHEYGDiMDh5GRgcPIwGFk4DAycBgZOIwMHEYGDiMDh5GBw6j39P+XTMubgbT4FAAAAABJRU5ErkJggg==">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: phone-first single column; a work-floor tally clicker up top, numbers and records below, two columns on wide screens */
+:root {
+  --bg: #ECEFF2;
+  --surface: #FFFFFF;
+  --sunk: #E2E6EB;
+  --ink: #161A1F;
+  --muted: #59626E;
+  --line: #D3D9DF;
+  --accent: #F2A900;
+  --accent-ink: #1C1500;
+  --accent-text: #855C00;
+  --bar: #C2CAD3;
+  --pause: #2F6FB3;
+  --danger: #B3261E;
+  --display: "Big Shoulders Display", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1216; --surface: #181D23; --sunk: #12161B; --ink: #E9EDF1; --muted: #98A2AE;
+    --line: #29313A; --accent: #F5B320; --accent-ink: #1C1500; --accent-text: #F5B320;
+    --bar: #39434F; --pause: #7DB3EE; --danger: #FF8A80; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1216; --surface: #181D23; --sunk: #12161B; --ink: #E9EDF1; --muted: #98A2AE;
+  --line: #29313A; --accent: #F5B320; --accent-ink: #1C1500; --accent-text: #F5B320;
+  --bar: #39434F; --pause: #7DB3EE; --danger: #FF8A80; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap {
+  max-width: 1060px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 56px;
+  display: grid; gap: 16px;
+}
+h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: .01em; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.6rem; text-transform: uppercase; }
+h2 { font-size: 1.35rem; text-transform: uppercase; }
+p { margin: 0; max-width: 65ch; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 26px; height: 22px; background: var(--accent); clip-path: polygon(0 0, 100% 0, 84% 100%, 16% 100%); }
+.today { color: var(--muted); font-weight: 500; }
+.notice { background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: .95rem; }
+
+.hero { display: grid; gap: 16px; }
+@media (min-width: 820px) { .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+
+.counter {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  padding: 18px; display: grid; gap: 14px; position: relative; overflow: hidden;
+}
+.counter-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.state-pill {
+  font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  padding: 3px 10px; border-radius: 999px; background: var(--sunk); color: var(--muted);
+}
+.state-pill[data-s="running"] { background: var(--accent); color: var(--accent-ink); }
+.state-pill[data-s="paused"] { background: var(--pause); color: var(--surface); }
+.state-pill[data-s="over"] { background: var(--danger); color: var(--surface); }
+.timer {
+  font-family: var(--display); font-weight: 800; font-size: clamp(4.5rem, 24vw, 7.5rem);
+  line-height: .9; font-variant-numeric: tabular-nums; letter-spacing: .01em;
+}
+.counter[data-s="paused"] .timer { color: var(--pause); }
+.counter[data-s="over"] .timer, .counter[data-s="idle"] .timer { color: var(--muted); }
+.timer-sub { color: var(--muted); font-size: .98rem; min-height: 1.45em; }
+
+.tap {
+  border: 0; border-radius: 16px; background: var(--accent); color: var(--accent-ink);
+  min-height: 9.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  box-shadow: inset 0 -6px 0 rgba(0,0,0,.14);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.tap:active { transform: translateY(3px); box-shadow: inset 0 -3px 0 rgba(0,0,0,.14); }
+.tap-plus { font-family: var(--display); font-weight: 800; font-size: 4.2rem; line-height: 1; }
+.tap-label { font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .85rem; }
+.controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ctl {
+  min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--sunk);
+  font-weight: 600; padding: 6px 8px; touch-action: manipulation;
+}
+.ctl:disabled { opacity: .45; cursor: default; }
+.ctl.on { background: var(--pause); color: var(--surface); border-color: var(--pause); }
+.wake { justify-self: start; background: none; border: 0; color: var(--muted); padding: 4px 0; font-weight: 600; font-size: .92rem; }
+.wake[aria-pressed="true"] { color: var(--accent-text); }
+.flash { animation: flash .35s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); } to { background: var(--surface); } }
+
+.side { display: grid; gap: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 2px; }
+.tile-k { text-transform: uppercase; letter-spacing: .1em; font-size: .74rem; font-weight: 600; color: var(--muted); }
+.tile-n { font-family: var(--display); font-weight: 800; font-size: 2.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.tile-a { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.tile-a b { color: var(--ink); font-weight: 600; }
+
+.block { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .9rem; }
+
+.hours { overflow-x: auto; }
+.hgrid { display: flex; gap: 4px; align-items: stretch; min-height: 150px; }
+.hcol { flex: 1 0 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hn { font-size: .78rem; font-weight: 600; font-variant-numeric: tabular-nums; min-height: 1.1em; }
+.htrack { flex: 1; width: 100%; display: flex; align-items: flex-end; border-bottom: 1px solid var(--line); min-height: 100px; }
+.hbar { width: 100%; background: var(--bar); border-radius: 4px 4px 0 0; min-height: 0; }
+.hcol.now .hbar { background: var(--accent); }
+.hl { font-size: .72rem; color: var(--muted); }
+.hcol.now .hl { color: var(--ink); font-weight: 700; }
+
+.seg { display: inline-flex; background: var(--sunk); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; padding: 7px 12px; border-radius: 8px; font-weight: 600; color: var(--muted); }
+.seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: .95rem; }
+th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th.r, td.r { text-align: right; }
+td.note { white-space: normal; color: var(--muted); font-size: .88rem; min-width: 9rem; }
+tr.ev-r td, tr.ev-p td { color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+.empty { color: var(--muted); padding: 10px 2px; }
+select { background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
+
+.grid2 { display: grid; gap: 16px; }
+@media (min-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.solid, .outline, .file-btn {
+  min-height: 48px; border-radius: 12px; padding: 10px 16px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+}
+.solid { background: var(--accent); color: var(--accent-ink); border: 0; }
+.outline, .file-btn { background: var(--sunk); border: 1px solid var(--line); }
+.solid:disabled, .outline:disabled { opacity: .45; cursor: default; }
+.file-btn { cursor: pointer; position: relative; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.file-btn:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+summary { cursor: pointer; font-weight: 700; }
+.steps { margin: 10px 0 0; padding-left: 1.3rem; display: grid; gap: 8px; }
+.steps li { max-width: 65ch; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: var(--sunk); padding: 1px 5px; border-radius: 5px; }
+.setting { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.setting input { width: 5.5rem; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600;
+  max-width: calc(100% - 32px); z-index: 20; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+}
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } .tap { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><h1>Bucket Counter</h1></div>
+    <div class="today" id="todayLabel"></div>
+  </header>
+  <div class="notice" id="notice" hidden></div>
+
+  <section class="hero">
+    <div class="counter" id="counter" data-s="idle">
+      <div class="counter-head">
+        <span class="eyebrow">Current bucket</span>
+        <span class="state-pill" id="statePill" data-s="idle">Stopped</span>
+      </div>
+      <div class="timer" id="timer">0:00</div>
+      <div class="timer-sub" id="timerSub">Tap Start to time your first bucket.</div>
+      <button class="tap" id="tapBtn" type="button">
+        <span class="tap-plus" id="tapPlus">Start</span>
+        <span class="tap-label" id="tapLabel">Start the timer</span>
+      </button>
+      <div class="controls">
+        <button class="ctl" id="pauseBtn" type="button" disabled>Pause</button>
+        <button class="ctl" id="resetBtn" type="button">Reset timer</button>
+        <button class="ctl" id="undoBtn" type="button" disabled>Undo last</button>
+      </div>
+      <button class="wake" id="wakeBtn" type="button" aria-pressed="false" hidden>Keep screen on: off</button>
+    </div>
+
+    <div class="side">
+      <div class="tiles">
+        <div class="tile"><div class="tile-k">This hour</div><div class="tile-n" id="nHour">0</div><div class="tile-a">avg <b id="aHour">–</b></div></div>
+        <div class="tile"><div class="tile-k">Today</div><div class="tile-n" id="nDay">0</div><div class="tile-a">avg <b id="aDay">–</b></div></div>
+        <div class="tile"><div class="tile-k">This week</div><div class="tile-n" id="nWeek">0</div><div class="tile-a">avg <b id="aWeek">–</b></div></div>
+        <div class="tile"><div class="tile-k">This month</div><div class="tile-n" id="nMonth">0</div><div class="tile-a">avg <b id="aMonth">–</b></div></div>
+      </div>
+      <div class="block">
+        <div class="sec-head"><h2>Today by hour</h2><span class="hint" id="rateToday">No buckets yet today</span></div>
+        <div class="hours"><div class="hgrid" id="hourChart"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head">
+      <h2>History</h2>
+      <div class="seg" role="tablist" id="periodTabs">
+        <button type="button" role="tab" data-p="day" aria-selected="true">Days</button>
+        <button type="button" role="tab" data-p="week" aria-selected="false">Weeks</button>
+        <button type="button" role="tab" data-p="month" aria-selected="false">Months</button>
+      </div>
+    </div>
+    <div class="table-wrap" id="histWrap"><p class="empty">No buckets yet. Days, weeks and months fill in as you tap.</p></div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head">
+      <h2>Bucket log</h2>
+      <select id="logDay" aria-label="Day to show"></select>
+    </div>
+    <div class="table-wrap" id="logWrap"><p class="empty">Every bucket, pause and reset shows here with its time.</p></div>
+  </section>
+
+  <section class="grid2">
+    <div class="block">
+      <h2>Export</h2>
+      <p>The report is a readable page with your day, week and month totals, then every bucket with its time and how long it took. The CSV opens in Numbers or Excel. Your counts live only on this phone, so export now and then as a backup.</p>
+      <div class="btn-row">
+        <button class="solid" id="expHtml" type="button">Export report</button>
+        <button class="outline" id="expCsv" type="button">Export CSV</button>
+      </div>
+      <p class="hint" id="expNote"></p>
+    </div>
+
+    <div class="block">
+      <h2>Lock screen buttons</h2>
+      <p>This page can't sit on your iPhone lock screen, but a Shortcut can. Each lock-screen tap writes a line to a log file. Import that file here and the taps land in your counts with their real times.</p>
+      <label class="file-btn">Import lock-screen log<input type="file" id="importFile" accept=".txt,.csv,text/plain,text/csv"></label>
+      <p class="hint" id="importNote">Importing the same file again is safe. Lines already counted are skipped. You can also import a CSV exported from the Claude version to bring your history over.</p>
+      <details>
+        <summary>Set up the shortcuts (iOS 18 or later)</summary>
+        <ol class="steps">
+          <li>Open <b>Shortcuts</b>, tap <b>+</b>, and name the shortcut <b>Bucket +1</b>.</li>
+          <li>Add <b>Format Date</b>. Set Date to <b>Current Date</b>, Date Format to <b>ISO 8601</b>, and turn on <b>Include Time</b>.</li>
+          <li>Add <b>Text</b>. Type <code>BUCKET</code>, a space, then insert the <b>Formatted Date</b> variable.</li>
+          <li>Add <b>Append to Text File</b>. Point it at <code>bucket-log.txt</code> in the Shortcuts folder of iCloud Drive and turn on <b>Make New Line</b>.</li>
+          <li>Duplicate the shortcut twice. Name one <b>Reset timer</b> with <code>RESET</code> as the text, and one <b>Pause</b> with <code>PAUSE</code>. Each Pause tap switches between paused and running.</li>
+          <li>Press and hold your lock screen, tap <b>Customize</b>, then <b>Lock Screen</b>. Tap the <b>–</b> on a bottom button, tap the empty spot, choose <b>Shortcut</b> and pick <b>Bucket +1</b>. Put <b>Reset timer</b> or <b>Pause</b> on the other side. Add the third one to Control Center the same way.</li>
+          <li>Back in this app, tap <b>Import lock-screen log</b> and pick <code>bucket-log.txt</code> from iCloud Drive › Shortcuts.</li>
+        </ol>
+        <p class="hint" style="margin-top:10px">Your iPhone may ask for Face ID before a shortcut can write to the file.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="setting">
+      <label for="cutoff"><b>Break limit</b></label>
+      <input id="cutoff" type="number" inputmode="numeric" min="1" max="720" value="60">
+      <span>minutes</span>
+    </div>
+    <p class="hint">A bucket that took longer than this (not counting paused time) still counts, but stays out of your average times. It catches the times you forgot to pause.</p>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- state ----------
+  // days: "YYYY-MM-DD" -> [[ms, kind]] ; kind: b = bucket done, r = reset/start, p = pause toggle
+  let days = {};
+  let cutoffMin = 60;
+  let mode = "loading";
+  let coll = null;
+  const downloads = true;
+  let period = "day";
+  let logSel = null;
+  let cache = { B: [], last: null, run: null, todayAvg: null };
+  const LS_KEY = "bucket-counter-v1";
+
+  // ---------- time helpers ----------
+  const pad = (n) => String(n).padStart(2, "0");
+  function dayKey(ms) { const d = new Date(ms); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function hourKey(ms) { return dayKey(ms) + "T" + pad(new Date(ms).getHours()); }
+  function weekStart(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
+  function weekKey(ms) { return dayKey(weekStart(ms).getTime()); }
+  function monthKey(ms) { const d = new Date(ms); return d.getFullYear() + "-" + pad(d.getMonth() + 1); }
+  function parseDay(k) { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d || 1); }
+  function fmtDur(sec) {
+    if (sec == null || !isFinite(sec)) return "–";
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return h ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+  }
+  const fmtClock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+  function fmtDayLabel(k, withYear) {
+    const o = { weekday: "short", month: "short", day: "numeric" };
+    if (withYear || parseDay(k).getFullYear() !== new Date().getFullYear()) o.year = "numeric";
+    return parseDay(k).toLocaleDateString([], o);
+  }
+  function fmtWeekLabel(k) {
+    const s = parseDay(k), e = new Date(s); e.setDate(e.getDate() + 6);
+    const f = { month: "short", day: "numeric" };
+    const y = s.getFullYear() !== new Date().getFullYear() ? " " + s.getFullYear() : "";
+    return s.toLocaleDateString([], f) + " – " + e.toLocaleDateString([], f) + y;
+  }
+  const fmtMonthLabel = (k) => parseDay(k).toLocaleDateString([], { month: "long", year: "numeric" });
+  const fmtRate = (r) => (r == null ? "–" : (r >= 10 ? r.toFixed(0) : r.toFixed(1)));
+
+  // ---------- derived data ----------
+  function allEvents() {
+    const out = [];
+    for (const k in days) for (const e of days[k]) out.push(e);
+    out.sort((a, b) => a[0] - b[0]);
+    return out;
+  }
+  // Walks events in order. Bucket time = time since the last bucket/reset, minus paused time.
+  function compute() {
+    const ev = allEvents();
+    const B = [];
+    let segStart = null, pausedAt = null, pausedTotal = 0;
+    for (const [t, k] of ev) {
+      if (k === "r") { segStart = t; pausedAt = null; pausedTotal = 0; }
+      else if (k === "p") {
+        if (segStart == null) continue;
+        if (pausedAt == null) pausedAt = t; else { pausedTotal += t - pausedAt; pausedAt = null; }
+      } else if (k === "b") {
+        let dur = null;
+        if (segStart != null) {
+          const pz = pausedTotal + (pausedAt != null ? t - pausedAt : 0);
+          dur = Math.max(0, (t - segStart - pz) / 1000);
+        }
+        B.push({ t, dur, counted: dur != null && dur <= cutoffMin * 60, first: segStart == null });
+        segStart = t; pausedAt = null; pausedTotal = 0;
+      }
+    }
+    return { B, ev, run: { segStart, pausedAt, pausedTotal } };
+  }
+  function agg(B, keyFn) {
+    const m = new Map();
+    for (const b of B) {
+      const k = keyFn(b.t);
+      let g = m.get(k);
+      if (!g) { g = { key: k, n: 0, cn: 0, sum: 0, min: Infinity, max: 0 }; m.set(k, g); }
+      g.n++;
+      if (b.counted) { g.cn++; g.sum += b.dur; g.min = Math.min(g.min, b.dur); g.max = Math.max(g.max, b.dur); }
+    }
+    return m;
+  }
+  const avgOf = (g) => (g && g.cn ? g.sum / g.cn : null);
+  const rateOf = (g) => (g && g.sum > 0 ? g.cn / (g.sum / 3600) : null);
+  const minOf = (g) => (g && g.cn ? g.min : null);
+  const maxOf = (g) => (g && g.cn ? g.max : null);
+
+  // ---------- rendering ----------
+  function setTile(id, g) {
+    $("n" + id).textContent = g ? g.n : 0;
+    $("a" + id).textContent = fmtDur(avgOf(g));
+  }
+
+  function renderAll() {
+    const now = Date.now();
+    const { B, ev, run } = compute();
+    const H = agg(B, hourKey), D = agg(B, dayKey), W = agg(B, weekKey), M = agg(B, monthKey);
+    const today = D.get(dayKey(now));
+    cache = { B, ev, last: ev[ev.length - 1] || null, run, todayAvg: avgOf(today) };
+
+    $("todayLabel").textContent = new Date(now).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+    setTile("Hour", H.get(hourKey(now)));
+    setTile("Day", today);
+    setTile("Week", W.get(weekKey(now)));
+    setTile("Month", M.get(monthKey(now)));
+    const r = rateOf(today);
+    $("rateToday").textContent = today ? (r != null ? fmtRate(r) + " buckets per working hour" : today.n + " today") : "No buckets yet today";
+
+    renderHours(B, now);
+    renderHistory(D, W, M);
+    renderLog(B);
+    renderTimer();
+    $("undoBtn").disabled = !ev.length;
+    $("expHtml").disabled = $("expCsv").disabled = !downloads || !B.length;
+    if (!B.length) $("expNote").textContent = "Export turns on after your first bucket.";
+    else $("expNote").textContent = "";
+  }
+
+  function runState(now) {
+    const { run, last } = cache;
+    if (!last || run.segStart == null) return { s: "idle", active: 0 };
+    const pz = run.pausedTotal + (run.pausedAt != null ? now - run.pausedAt : 0);
+    const active = (now - run.segStart - pz) / 1000;
+    if (run.pausedAt != null) return { s: "paused", active, pausedFor: (now - run.pausedAt) / 1000 };
+    if (active > cutoffMin * 60) return { s: "over", active };
+    return { s: "running", active };
+  }
+
+  function renderTimer() {
+    const now = Date.now();
+    const st = runState(now);
+    const lastB = cache.B[cache.B.length - 1];
+    const pill = $("statePill");
+    $("counter").dataset.s = st.s;
+    pill.dataset.s = st.s;
+    pill.textContent = { idle: "Stopped", running: "Running", paused: "Paused", over: "Over limit" }[st.s];
+    $("timer").textContent = fmtDur(st.active);
+
+    let sub;
+    if (st.s === "idle") sub = "Tap Start to time your first bucket.";
+    else if (st.s === "paused") sub = "Paused for " + fmtDur(st.pausedFor) + ". Tap Resume, or +1 to finish this bucket.";
+    else if (st.s === "over") sub = "Past your " + cutoffMin + " min break limit. Tap Reset timer before your next bucket.";
+    else if (lastB && lastB.dur != null) sub = "Last bucket " + fmtDur(lastB.dur) + " · today's average " + fmtDur(cache.todayAvg);
+    else sub = "Timer running. Tap +1 when the bucket is done.";
+    $("timerSub").textContent = sub;
+
+    const idle = st.s === "idle";
+    $("tapPlus").textContent = idle ? "Start" : "+1";
+    $("tapLabel").textContent = idle ? "Start the timer" : "Bucket done";
+    const pb = $("pauseBtn");
+    pb.disabled = idle;
+    pb.textContent = st.s === "paused" ? "Resume" : "Pause";
+    pb.classList.toggle("on", st.s === "paused");
+  }
+
+  function hourLabel(h) { const a = h < 12 ? "a" : "p"; const n = h % 12 === 0 ? 12 : h % 12; return n + a; }
+  function renderHours(B, now) {
+    const dk = dayKey(now), cur = new Date(now).getHours();
+    const counts = new Array(24).fill(0);
+    for (const b of B) if (dayKey(b.t) === dk) counts[new Date(b.t).getHours()]++;
+    let first = counts.findIndex((c) => c > 0);
+    first = first < 0 ? cur : Math.min(first, cur);
+    let last = cur;
+    for (let h = 23; h >= 0; h--) if (counts[h]) { last = Math.max(last, h); break; }
+    if (last - first < 7) { first = Math.max(0, last - 7); last = Math.min(23, first + 7); }
+    const max = Math.max(1, ...counts.slice(first, last + 1));
+    let html = "";
+    for (let h = first; h <= last; h++) {
+      const c = counts[h];
+      html += '<div class="hcol' + (h === cur ? " now" : "") + '"><span class="hn">' + (c || "") + '</span>' +
+        '<div class="htrack"><div class="hbar" style="height:' + ((c / max) * 100).toFixed(1) + '%"></div></div>' +
+        '<span class="hl">' + hourLabel(h) + "</span></div>";
+    }
+    $("hourChart").innerHTML = html;
+  }
+
+  function periodRows(D, W, M, p) {
+    const map = p === "day" ? D : p === "week" ? W : M;
+    const label = p === "day" ? fmtDayLabel : p === "week" ? fmtWeekLabel : fmtMonthLabel;
+    return [...map.values()].sort((a, b) => (a.key < b.key ? 1 : -1)).map((g) => ({ g, label: label(g.key) }));
+  }
+
+  function renderHistory(D, W, M) {
+    let rows = periodRows(D, W, M, period);
+    if (period === "day") rows = rows.slice(0, 60);
+    if (!rows.length) { $("histWrap").innerHTML = '<p class="empty">No buckets yet. Days, weeks and months fill in as you tap.</p>'; return; }
+    let html = '<table><thead><tr><th>' + { day: "Day", week: "Week", month: "Month" }[period] +
+      '</th><th class="r">Buckets</th><th class="r">Avg time</th><th class="r">Fastest</th><th class="r">Slowest</th><th class="r">Per hour</th></tr></thead><tbody>';
+    for (const { g, label } of rows) {
+      html += "<tr><td>" + label + '</td><td class="r"><b>' + g.n + '</b></td><td class="r">' + fmtDur(avgOf(g)) +
+        '</td><td class="r">' + fmtDur(minOf(g)) + '</td><td class="r">' + fmtDur(maxOf(g)) + '</td><td class="r">' + fmtRate(rateOf(g)) + "</td></tr>";
+    }
+    html += "</tbody></table>";
+    if (period === "day" && D.size > 60) html += '<p class="hint" style="margin-top:8px">Showing the last 60 days. The export has all of them.</p>';
+    $("histWrap").innerHTML = html;
+  }
+
+  function dayRows(dk, B) {
+    // Chronological rows for one day: buckets numbered, pauses and resets listed.
+    const bByT = new Map(B.map((b) => [b.t, b]));
+    const ev = (days[dk] || []).slice().sort((a, b) => a[0] - b[0]);
+    const rows = [];
+    let n = 0, paused = false;
+    // Pause state at the start of this day depends on earlier days.
+    const before = allEvents().filter((e) => e[0] < (ev[0] ? ev[0][0] : 0));
+    for (const [, k] of before) { if (k === "p") paused = !paused; else paused = false; }
+    for (const [t, k] of ev) {
+      if (k === "b") {
+        const b = bByT.get(t) || { dur: null, counted: false, first: true };
+        n++;
+        let note = "";
+        if (b.dur == null) note = "Timer wasn't running, so no time";
+        else if (!b.counted) note = "Over the break limit, left out of averages";
+        rows.push({ t, kind: "b", n, dur: b.dur, note });
+        paused = false;
+      } else if (k === "r") { rows.push({ t, kind: "r", note: "Timer reset" }); paused = false; }
+      else { paused = !paused; rows.push({ t, kind: "p", note: paused ? "Paused" : "Resumed" }); }
+    }
+    return rows;
+  }
+
+  function renderLog(B) {
+    const sel = $("logDay");
+    const todayK = dayKey(Date.now());
+    const keys = Object.keys(days).filter((k) => days[k].length);
+    if (!keys.includes(todayK)) keys.push(todayK);
+    keys.sort().reverse();
+    if (!logSel || !keys.includes(logSel)) logSel = todayK;
+    const opts = keys.map((k) => '<option value="' + k + '"' + (k === logSel ? " selected" : "") + ">" + (k === todayK ? "Today" : fmtDayLabel(k)) + "</option>").join("");
+    if (sel.innerHTML !== opts) sel.innerHTML = opts;
+
+    const rows = dayRows(logSel, B).reverse();
+    if (!rows.length) { $("logWrap").innerHTML = '<p class="empty">Nothing logged on this day yet. Every bucket, pause and reset shows here with its time.</p>'; return; }
+    let html = '<table><thead><tr><th class="r">#</th><th>Time</th><th class="r">Took</th><th>Note</th></tr></thead><tbody>';
+    for (const r of rows) {
+      html += '<tr class="ev-' + r.kind + '"><td class="r">' + (r.kind === "b" ? "<b>" + r.n + "</b>" : "") + "</td><td>" + fmtClock(r.t) +
+        '</td><td class="r">' + (r.kind === "b" ? fmtDur(r.dur) : "") + '</td><td class="note">' + r.note + "</td></tr>";
+    }
+    $("logWrap").innerHTML = html + "</tbody></table>";
+  }
+
+  // ---------- saving ----------
+  const pending = {}, writing = {};
+  function saveDay(dk) { pending[dk] = true; flush(dk); }
+  async function flush(dk) {
+    if (writing[dk]) return;
+    writing[dk] = true;
+    try {
+      while (pending[dk]) {
+        pending[dk] = false;
+        try { await writeDay(dk); } catch (e) { onWriteError(e); }
+      }
+    } finally { writing[dk] = false; }
+  }
+  async function writeDay(dk) {
+    if (mode === "db") {
+      const ev = days[dk] || [];
+      const ref = coll.doc("day-" + dk);
+      if (ev.length) await ref.set({ date: dk, ev: ev.map(([t, k]) => ({ t, k })) });
+      else await ref.delete();
+    } else saveLocal();
+  }
+  async function saveSettings() {
+    saveLocal();
+  }
+  function onWriteError(e) {
+    const code = e && e.code;
+    if (code === "quota_exceeded") showNotice("Storage is full, so new taps aren't saving. Export your data, then ask Claude to trim old days.");
+    else if (code === "invalid_argument") showNotice("This copy of the page can't save. Open your own copy in the Claude app to keep counts.");
+    else showNotice("A tap didn't save because the connection dropped. It will save with your next tap.");
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ days, cutoffMin })); }
+    catch (e) { showNotice("Your phone refused to save the last tap. Export a backup, then free up some storage."); }
+  }
+  function loadLocal() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+      if (raw && raw.days) { days = raw.days; cutoffMin = raw.cutoffMin || 60; }
+    } catch (e) {}
+  }
+  function showNotice(text) { const n = $("notice"); n.textContent = text; n.hidden = false; }
+
+  // ---------- actions ----------
+  function addEvent(t, k) {
+    const dk = dayKey(t);
+    days[dk] = (days[dk] || []).concat([[t, k]]).sort((a, b) => a[0] - b[0]);
+    saveDay(dk);
+    renderAll();
+  }
+  let toastTimer = null;
+  function toast(text) {
+    const el = $("toast");
+    el.textContent = text; el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (el.hidden = true), 2200);
+  }
+  function flash() {
+    const c = $("counter");
+    c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash");
+  }
+
+  $("tapBtn").addEventListener("click", () => {
+    const st = runState(Date.now());
+    if (st.s === "idle") { addEvent(Date.now(), "r"); toast("Timer started"); return; }
+    addEvent(Date.now(), "b");
+    const b = cache.B[cache.B.length - 1];
+    const todayN = cache.B.filter((x) => dayKey(x.t) === dayKey(Date.now())).length;
+    flash();
+    toast("Bucket " + todayN + " today · " + (b && b.dur != null ? fmtDur(b.dur) : "no time"));
+  });
+  $("pauseBtn").addEventListener("click", () => {
+    const st = runState(Date.now());
+    if (st.s === "idle") return;
+    addEvent(Date.now(), "p");
+    toast(st.s === "paused" ? "Resumed" : "Paused");
+  });
+  $("resetBtn").addEventListener("click", () => { addEvent(Date.now(), "r"); toast("Timer reset to 0:00"); });
+  $("undoBtn").addEventListener("click", () => {
+    const last = cache.last;
+    if (!last) return;
+    const dk = dayKey(last[0]);
+    const arr = days[dk] || [];
+    const i = arr.findIndex((e) => e[0] === last[0] && e[1] === last[1]);
+    if (i < 0) return;
+    days[dk] = arr.slice(0, i).concat(arr.slice(i + 1));
+    saveDay(dk);
+    renderAll();
+    toast("Removed " + { b: "bucket", r: "reset", p: "pause" }[last[1]] + " at " + fmtClock(last[0]));
+  });
+  $("periodTabs").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-p]");
+    if (!b) return;
+    period = b.dataset.p;
+    for (const x of $("periodTabs").querySelectorAll("button")) x.setAttribute("aria-selected", String(x === b));
+    renderAll();
+  });
+  $("logDay").addEventListener("change", (e) => { logSel = e.target.value; renderAll(); });
+
+  let cutoffT = null;
+  $("cutoff").addEventListener("input", (e) => {
+    const v = parseInt(e.target.value, 10);
+    if (!(v >= 1 && v <= 720)) return;
+    cutoffMin = v;
+    renderAll();
+    clearTimeout(cutoffT);
+    cutoffT = setTimeout(saveSettings, 800);
+  });
+
+  // Keep screen on
+  let wake = null, wantWake = false;
+  function paintWake() { const on = !!wake; $("wakeBtn").setAttribute("aria-pressed", String(on)); $("wakeBtn").textContent = "Keep screen on: " + (on ? "on" : "off"); }
+  async function requestWake() {
+    try {
+      wake = await navigator.wakeLock.request("screen");
+      wake.addEventListener("release", () => { wake = null; paintWake(); });
+    } catch (e) { wake = null; wantWake = false; toast("Your phone didn't allow keeping the screen on here."); }
+    paintWake();
+  }
+  if ("wakeLock" in navigator) {
+    $("wakeBtn").hidden = false;
+    $("wakeBtn").addEventListener("click", async () => {
+      if (wake) { wantWake = false; try { await wake.release(); } catch (e) {} wake = null; paintWake(); }
+      else { wantWake = true; requestWake(); }
+    });
+    document.addEventListener("visibilitychange", () => { if (wantWake && !wake && document.visibilityState === "visible") requestWake(); });
+  }
+
+  // Import lock-screen log
+  $("importFile").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    let text = "";
+    try { text = await f.text(); } catch (err) { $("importNote").textContent = "That file couldn't be read. Pick bucket-log.txt from iCloud Drive › Shortcuts."; return; }
+    const seen = new Set(allEvents().map((x) => Math.floor(x[0] / 1000) + x[1]));
+    const touched = new Set();
+    let added = 0, skipped = 0, bad = 0;
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line || line.startsWith("date,time,event")) continue;
+      const csv = line.match(/^\d{4}-\d{2}-\d{2},"[^"]*",(bucket|reset|paused|resumed),[^,]*,[^,]*,(\S+)$/);
+      if (csv) {
+        const ms = Date.parse(csv[2]);
+        const k = csv[1] === "bucket" ? "b" : csv[1] === "reset" ? "r" : "p";
+        if (isNaN(ms)) { bad++; continue; }
+        const key = Math.floor(ms / 1000) + k;
+        if (seen.has(key)) { skipped++; continue; }
+        seen.add(key);
+        const dk = dayKey(ms);
+        (days[dk] = days[dk] || []).push([ms, k]);
+        touched.add(dk);
+        added++;
+        continue;
+      }
+      const up = line.toUpperCase();
+      const k = up.includes("RESET") ? "r" : up.includes("PAUSE") ? "p" : (up.includes("BUCKET") || line.includes("+1")) ? "b" : null;
+      const ds = line.replace(/BUCKET|RESET|PAUSE|\+1/gi, "").replace(/\sat\s/i, " ").trim();
+      const ms = Date.parse(ds);
+      if (!k || isNaN(ms)) { bad++; continue; }
+      const key = Math.floor(ms / 1000) + k;
+      if (seen.has(key)) { skipped++; continue; }
+      seen.add(key);
+      const dk = dayKey(ms);
+      (days[dk] = days[dk] || []).push([ms, k]);
+      touched.add(dk);
+      added++;
+    }
+    for (const dk of touched) { days[dk].sort((a, b) => a[0] - b[0]); saveDay(dk); }
+    renderAll();
+    let msg = added ? "Added " + added + " lock-screen tap" + (added === 1 ? "" : "s") + "." : "No new taps in that file.";
+    if (skipped) msg += " " + skipped + " already counted.";
+    if (bad) msg += " " + bad + " line" + (bad === 1 ? "" : "s") + " didn't look like BUCKET, RESET or PAUSE with a date, so they were skipped.";
+    $("importNote").textContent = msg;
+    e.target.value = "";
+  });
+
+  // ---------- export ----------
+  function buildReport() {
+    const { B } = compute();
+    const D = agg(B, dayKey), W = agg(B, weekKey), M = agg(B, monthKey);
+    const all = agg(B, () => "all").get("all");
+    const now = new Date();
+    const firstK = B.length ? dayKey(B[0].t) : null, lastK = B.length ? dayKey(B[B.length - 1].t) : null;
+    const tbl = (rows, head) => {
+      let h = "<table><thead><tr><th>" + head + "</th><th class=r>Buckets</th><th class=r>Avg time</th><th class=r>Fastest</th><th class=r>Slowest</th><th class=r>Per hour</th></tr></thead><tbody>";
+      for (const { g, label } of rows) h += "<tr><td>" + label + "</td><td class=r><b>" + g.n + "</b></td><td class=r>" + fmtDur(avgOf(g)) + "</td><td class=r>" + fmtDur(minOf(g)) + "</td><td class=r>" + fmtDur(maxOf(g)) + "</td><td class=r>" + fmtRate(rateOf(g)) + "</td></tr>";
+      return h + "</tbody></table>";
+    };
+    let log = "";
+    for (const dk of Object.keys(days).filter((k) => days[k].length).sort()) {
+      const rows = dayRows(dk, B);
+      const g = D.get(dk);
+      log += "<h3>" + fmtDayLabel(dk, true) + " <span>" + (g ? g.n : 0) + " buckets · avg " + fmtDur(avgOf(g)) + "</span></h3>";
+      log += "<table><thead><tr><th class=r>#</th><th>Time</th><th class=r>Took</th><th>Note</th></tr></thead><tbody>";
+      for (const r of rows) log += "<tr" + (r.kind !== "b" ? " class=m" : "") + "><td class=r>" + (r.kind === "b" ? r.n : "") + "</td><td>" + fmtClock(r.t) + "</td><td class=r>" + (r.kind === "b" ? fmtDur(r.dur) : "") + "</td><td>" + r.note + "</td></tr>";
+      log += "</tbody></table>";
+    }
+    return "<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>Bucket report " + dayKey(now) + "</title><style>" +
+      "body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#161A1F;background:#fff;max-width:860px;margin:0 auto;padding:24px 16px 60px;line-height:1.45}" +
+      "h1{font-size:28px;margin:0 0 4px}h2{font-size:20px;margin:36px 0 10px;padding-bottom:6px;border-bottom:3px solid #F2A900}h3{font-size:16px;margin:26px 0 8px}h3 span{font-weight:400;color:#59626E}" +
+      ".meta{color:#59626E;margin:0 0 18px}.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.sum div{border:1px solid #D3D9DF;border-radius:10px;padding:10px 12px}.sum b{display:block;font-size:24px}.sum span{color:#59626E;font-size:13px;text-transform:uppercase;letter-spacing:.08em}" +
+      "table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#59626E;border-bottom:1px solid #D3D9DF;padding:6px 8px}td{padding:6px 8px;border-bottom:1px solid #E6EAEE}.r{text-align:right}tr.m td{color:#7A838E}" +
+      ".note{color:#59626E;font-size:14px}</style></head><body>" +
+      "<h1>Bucket report</h1><p class=meta>Generated " + now.toLocaleString() + (firstK ? " · " + fmtDayLabel(firstK, true) + " to " + fmtDayLabel(lastK, true) : "") + "</p>" +
+      "<div class=sum><div><span>Total buckets</span><b>" + (all ? all.n : 0) + "</b></div><div><span>Average time</span><b>" + fmtDur(avgOf(all)) + "</b></div><div><span>Fastest</span><b>" + fmtDur(minOf(all)) + "</b></div><div><span>Slowest</span><b>" + fmtDur(maxOf(all)) + "</b></div><div><span>Per working hour</span><b>" + fmtRate(rateOf(all)) + "</b></div><div><span>Days worked</span><b>" + D.size + "</b></div></div>" +
+      "<p class=note>Times leave out paused time. Buckets that took longer than the " + cutoffMin + " minute break limit are counted but left out of averages, fastest, slowest and per-hour figures.</p>" +
+      "<h2>By month</h2>" + tbl(periodRows(D, W, M, "month"), "Month") +
+      "<h2>By week</h2>" + tbl(periodRows(D, W, M, "week"), "Week (Mon–Sun)") +
+      "<h2>By day</h2>" + tbl(periodRows(D, W, M, "day").map((r) => ({ g: r.g, label: fmtDayLabel(r.g.key, true) })), "Day") +
+      "<h2>Every bucket</h2>" + log + "</body></html>";
+  }
+  function buildCsv() {
+    const { B } = compute();
+    const lines = ["date,time,event,seconds,in_averages,iso_timestamp"];
+    for (const dk of Object.keys(days).filter((k) => days[k].length).sort()) {
+      for (const r of dayRows(dk, B)) {
+        const ev = r.kind === "b" ? "bucket" : r.kind === "r" ? "reset" : r.note.toLowerCase();
+        const b = r.kind === "b" ? B.find((x) => x.t === r.t) : null;
+        lines.push([dk, '"' + fmtClock(r.t) + '"', ev, r.kind === "b" && r.dur != null ? Math.round(r.dur) : "", b ? (b.counted ? "yes" : "no") : "", new Date(r.t).toISOString()].join(","));
+      }
+    }
+    return lines.join("\n");
+  }
+  async function doSave(filename, data) {
+    const type = filename.endsWith(".csv") ? "text/csv" : "text/html";
+    const file = new File([data], filename, { type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: filename }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast("Saved " + filename);
+  }
+  $("expHtml").addEventListener("click", () => doSave("bucket-report-" + dayKey(Date.now()) + ".html", buildReport()));
+  $("expCsv").addEventListener("click", () => doSave("bucket-log-" + dayKey(Date.now()) + ".csv", buildCsv()));
+
+  // ---------- start ----------
+  $("cutoff").value = cutoffMin;
+  renderAll();
+  setInterval(renderTimer, 1000);
+  setInterval(renderAll, 30000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") renderAll(); });
+
+  mode = "local";
+  loadLocal();
+  $("cutoff").value = cutoffMin;
+  if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(() => {}); }
+  if ("serviceWorker" in navigator && location.protocol === "https:") { navigator.serviceWorker.register("sw.js").catch(() => {}); }
+  renderAll();
+})();
+</script>
+</body>
+</html>
